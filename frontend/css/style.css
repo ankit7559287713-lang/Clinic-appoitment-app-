@@ -1,0 +1,7 @@
+:root { --clinic-green: #176b52; --clinic-light: #eaf5f0; }
+body { background: #f7faf8; color: #20332d; }
+.clinic-nav { background: var(--clinic-green); }
+.hero { background: var(--clinic-light); border: 1px solid #d6e9df; }
+.hero h1 { color: #154d3d; }
+.card { border: 1px solid #e1ebe5; border-radius: 1rem; box-shadow: 0 5px 18px rgba(20,60,45,.04); }
+.card h3 { color: var(--clinic-green); }
