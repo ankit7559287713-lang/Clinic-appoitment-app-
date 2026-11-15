@@ -3,35 +3,46 @@
 A two-member OJT project focused on organizing clinic appointment scheduling for patients, doctors and receptionists.
 
 ## Project status
-**Initial documentation and project foundation.** Requirements and proposed architecture are documented. Complete appointment workflows, backend services, automated test execution and deployment are pending implementation unless explicitly marked otherwise in later commits.
+**Working frontend prototype (ClinicBook).** The browser app in `frontend/` implements the patient and doctor workflows on sample data in LocalStorage, with automated tests for the booking rules. The backend remains future scope.
 
-## Proposed technology stack
-- Frontend: HTML5, CSS3, JavaScript ES6, Bootstrap 5
+## Technology stack
+- Frontend: HTML5, CSS3, JavaScript ES6 modules, Bootstrap 5, GSAP (animations)
 - Initial prototype storage: Browser LocalStorage
+- Tests: Node.js built-in test runner (`node:test`)
 - Version control: Git and GitHub
 - Backend: documented as future scope; no backend framework or API is currently implemented
 
 ## User roles
-- **Patient:** browse doctors, view slots, book and cancel appointments
-- **Doctor:** manage availability and view appointment schedule
-- **Receptionist:** assist with appointment booking and cancellation
+- **Patient:** sign in with a registered phone number; browse doctors, view slots, book and cancel appointments, and review completed visits
+- **Doctor:** sign in with a staff ID; manage availability, view the day's schedule, mark visits completed and read patient reviews
+- **Receptionist:** planned; not part of the current prototype
 
 ## Repository structure
 ```text
-frontend/   HTML, CSS and JavaScript starter files
+frontend/   ClinicBook web app (HTML, CSS, JavaScript, Bootstrap 5) and its tests
 backend/    Backend planning and future module placeholder
 docs/       Project report, requirements, infrastructure and architecture
 diagrams/   Workflow diagram
 ```
 
 ## Preview the frontend
-Open `frontend/index.html` in a browser, or use VS Code Live Server.
+The app uses JavaScript modules, so it must be served (opening the file directly shows a blank page):
 
-## Core business rules to implement
+- **VS Code:** right-click `frontend/index.html` → **Open with Live Server**, or
+- **Node:** `cd frontend && npm start`, then open http://localhost:5730
+
+Demo logins (fictional data): patient phone `555-010-2001`, doctor staff ID `DOC-101`, or click any demo account on the login pages.
+
+Run the booking-rule tests: `cd frontend && npm test`
+
+See [frontend/README.md](frontend/README.md) for screens, architecture and rules.
+
+## Core business rules (implemented and tested)
 1. A doctor slot must not have more than one active booking.
 2. A patient must not have overlapping active appointments.
 3. Cancelling an appointment should release its slot.
 4. Required form fields must be validated.
+5. Patients can review a visit only after it is completed, once per visit.
 
 ## Documentation
 - [Project Report](docs/PROJECT_REPORT.md)

@@ -1,32 +1,173 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Clinic Appointment App - OJT project starter">
-  <title>Clinic Appointment App</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <title>ClinicBook · Book the right doctor</title>
+  <meta name="description" content="ClinicBook – pick a doctor, choose a free slot and book it. No double bookings.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%2340e0d0'/><path d='M8 17h4l2-5 4 9 2-4h4' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/></svg>">
 </head>
 <body>
-  <nav class="navbar navbar-dark clinic-nav"><div class="container">
-    <a class="navbar-brand fw-bold" href="index.html">Clinic Appointment App</a>
-    <span class="navbar-text text-white-50">OJT Project</span>
-  </div></nav>
-  <main class="container py-5">
-    <section class="hero p-4 p-md-5 rounded-4 mb-4">
-      <p class="small fw-semibold text-uppercase">Simple • Organized • Accessible</p>
-      <h1 class="display-5 fw-bold">Clinic appointment scheduling</h1>
-      <p class="lead mb-0">A proposed application to help patients, doctors and receptionists coordinate clinic appointments.</p>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="page-loader" id="pageLoader" aria-hidden="true"><div class="loader-mark"><span class="brand-mark"><i class="bi bi-heart-pulse-fill"></i></span>Loading ClinicBook…</div></div>
+  <div id="app-nav"></div>
+
+  <main id="main">
+    <!-- Hero -->
+    <section class="hero" aria-labelledby="heroTitle">
+      <span class="blob blob-1"></span><span class="blob blob-2"></span>
+      <div class="container position-relative">
+        <div class="row align-items-center g-5">
+          <div class="col-lg-6">
+            <span class="hero-badge hero-anim"><span class="dot"><i class="bi bi-stars" aria-hidden="true"></i></span>Clinic scheduling, made calm</span>
+            <h1 id="heroTitle" class="mt-4 mb-4">
+              <span class="word">Book</span> <span class="word">the</span> <span class="word">right</span> <span class="word">doctor.</span>
+              <span class="word text-gradient">Never</span> <span class="word text-gradient">the</span> <span class="word text-gradient">same</span> <span class="word text-gradient">slot</span> <span class="word text-gradient">twice.</span>
+            </h1>
+            <p class="lead mb-4 hero-anim">Patients see live availability and doctors control their day — with one booking rule that makes double bookings impossible.</p>
+            <div class="d-flex flex-wrap gap-2 mb-4 hero-anim">
+              <a href="#roles" class="btn btn-gradient btn-lg px-4"><i class="bi bi-calendar2-plus" aria-hidden="true"></i>Book an appointment</a>
+              <a href="#how" class="btn btn-outline-primary btn-lg px-4"><i class="bi bi-play-circle" aria-hidden="true"></i>How it works</a>
+            </div>
+            <ul class="list-unstyled d-flex flex-wrap gap-3 small fw-semibold text-muted mb-0 hero-anim">
+              <li><i class="bi bi-shield-check text-turq me-1" aria-hidden="true"></i>No double bookings</li>
+              <li><i class="bi bi-phone text-turq me-1" aria-hidden="true"></i>Works on any phone</li>
+              <li><i class="bi bi-incognito text-turq me-1" aria-hidden="true"></i>Fictional demo data</li>
+            </ul>
+          </div>
+
+          <div class="col-lg-6">
+            <div class="mock-wrap" aria-hidden="true">
+              <div class="mock-ring"></div>
+              <div class="mock-card">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                  <span class="avatar" style="background:linear-gradient(135deg,#40e0d0,#0b8076)">AR</span>
+                  <div class="min-w-0">
+                    <div class="fw-bold">Dr. Ananya Rao</div>
+                    <div class="small text-muted">General Physician · Room 101</div>
+                  </div>
+                  <span class="status-badge status-Available ms-auto"><i class="bi bi-check-circle"></i>Open</span>
+                </div>
+                <div class="d-flex gap-2 mb-3" id="mockDays"></div>
+                <div class="mock-slots" id="mockSlots">
+                  <div class="mock-slot">9:00 AM</div>
+                  <div class="mock-slot booked"><i class="bi bi-lock-fill"></i> Booked</div>
+                  <div class="mock-slot">10:00 AM</div>
+                  <div class="mock-slot booked"><i class="bi bi-lock-fill"></i> Booked</div>
+                  <div class="mock-slot" id="mockPick">11:00 AM</div>
+                  <div class="mock-slot">11:30 AM</div>
+                </div>
+                <div class="d-flex align-items-center justify-content-between mt-3 pt-3 border-top">
+                  <div class="small text-muted"><i class="bi bi-clock me-1"></i>30 min visit</div>
+                  <span class="btn btn-primary btn-sm px-3" id="mockBtn">Confirm booking</span>
+                </div>
+              </div>
+              <div class="float-pill pill-confirm" id="pillConfirm"><span class="ic"><i class="bi bi-check2-circle"></i></span><span>Booked for 11:00 AM<br><small class="text-muted fw-semibold">Confirmation sent to screen</small></span></div>
+              <div class="float-pill pill-guard" id="pillGuard"><span class="ic"><i class="bi bi-shield-x"></i></span><span>Slot already taken<br><small class="text-muted fw-semibold">Double booking blocked</small></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
-    <h2 class="h4 mb-3">Application roles</h2>
-    <div class="row g-3">
-      <div class="col-md-4"><article class="card h-100"><div class="card-body"><h3 class="h5">Patient</h3><p>Browse doctors, view available slots, and book or cancel appointments.</p><span class="badge text-bg-secondary">Planned workflow</span></div></article></div>
-      <div class="col-md-4"><article class="card h-100"><div class="card-body"><h3 class="h5">Doctor</h3><p>Manage available slots and review the appointment schedule.</p><span class="badge text-bg-secondary">Planned workflow</span></div></article></div>
-      <div class="col-md-4"><article class="card h-100"><div class="card-body"><h3 class="h5">Receptionist</h3><p>Assist patients with front-desk appointment booking and cancellation.</p><span class="badge text-bg-secondary">Planned workflow</span></div></article></div>
-    </div>
-    <div class="alert alert-info mt-4"><strong>Project status:</strong> Initial UI foundation only. Booking, authentication, backend APIs and persistence workflows are pending.</div>
+
+    <!-- Stats -->
+    <section class="container" style="margin-top:-2.5rem;position:relative;z-index:3" aria-label="Clinic at a glance">
+      <div class="stats-band shadow-lg" data-reveal>
+        <div class="row text-center g-4 position-relative">
+          <div class="col-6 col-md-3"><div class="num"><span data-count="doctors">0</span></div><div class="lbl">Doctors on staff</div></div>
+          <div class="col-6 col-md-3"><div class="num"><span data-count="open">0</span></div><div class="lbl">Open slots this week</div></div>
+          <div class="col-6 col-md-3"><div class="num"><span data-count="booked">0</span></div><div class="lbl">Upcoming visits</div></div>
+          <div class="col-6 col-md-3"><div class="num"><span data-count="double">0</span></div><div class="lbl">Double bookings, ever</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Roles -->
+    <section id="roles" class="container py-5 mt-4" aria-labelledby="rolesTitle">
+      <div class="text-center mb-5" data-reveal>
+        <div class="eyebrow mb-2">Sign in</div>
+        <h2 id="rolesTitle" class="display-6 fw-800">Who’s using ClinicBook today?</h2>
+        <p class="text-muted mx-auto" style="max-width:36rem">Patients and doctors each have their own login. Choose yours to continue.</p>
+      </div>
+      <div id="continueBox"></div>
+      <div class="row g-4 justify-content-center" id="roleCards">
+        <div class="col-md-6 col-lg-5" data-reveal>
+          <div class="card card-hover role-card">
+            <div class="role-icon"><i class="bi bi-person-heart" aria-hidden="true"></i></div>
+            <h3 class="h4">Patient</h3>
+            <p class="text-muted">Find a doctor, see free times and book or cancel your own visits.</p>
+            <ul>
+              <li><i class="bi bi-check2" aria-hidden="true"></i>Browse doctors &amp; live slots</li>
+              <li><i class="bi bi-check2" aria-hidden="true"></i>Book, view and cancel your visits</li>
+              <li><i class="bi bi-x" aria-hidden="true"></i>Can’t see other patients’ bookings</li>
+            </ul>
+            <a class="btn btn-primary w-100 mt-auto" href="patient-login.html"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>Patient login</a>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-5" data-reveal>
+          <div class="card card-hover role-card">
+            <div class="role-icon"><i class="bi bi-clipboard2-pulse" aria-hidden="true"></i></div>
+            <h3 class="h4">Doctor</h3>
+            <p class="text-muted">Publish availability, review the day and mark visits completed.</p>
+            <ul>
+              <li><i class="bi bi-check2" aria-hidden="true"></i>Add &amp; remove your open slots</li>
+              <li><i class="bi bi-check2" aria-hidden="true"></i>See your schedule in time order</li>
+              <li><i class="bi bi-x" aria-hidden="true"></i>Can’t remove slots that are booked</li>
+            </ul>
+            <a class="btn btn-primary w-100 mt-auto" href="doctor-login.html"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>Doctor login</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section id="how" class="bg-alt py-5 border-top border-bottom" aria-labelledby="howTitle">
+      <div class="container py-lg-4">
+        <div class="text-center mb-5" data-reveal>
+          <div class="eyebrow mb-2">How it works</div>
+          <h2 id="howTitle" class="display-6 fw-800">From “any time Tuesday?” to confirmed in 4 steps</h2>
+        </div>
+        <div class="row g-4">
+          <div class="col-sm-6 col-lg-3" data-reveal><div class="card step-card card-hover"><div class="step-num">1</div><h3 class="h5">Pick a doctor</h3><p class="text-muted mb-0">Search by name or filter by specialty and see who has time soonest.</p></div></div>
+          <div class="col-sm-6 col-lg-3" data-reveal><div class="card step-card card-hover"><div class="step-num">2</div><h3 class="h5">Choose a free slot</h3><p class="text-muted mb-0">Slots are clearly labelled Available or Booked — not just by colour.</p></div></div>
+          <div class="col-sm-6 col-lg-3" data-reveal><div class="card step-card card-hover"><div class="step-num">3</div><h3 class="h5">Add a reason</h3><p class="text-muted mb-0">Review a clear summary of doctor, date and time before you confirm.</p></div></div>
+          <div class="col-sm-6 col-lg-3" data-reveal><div class="card step-card card-hover"><div class="step-num">4</div><h3 class="h5">You’re booked</h3><p class="text-muted mb-0">The slot is re-checked at the last moment, then saved. It’s yours.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Guarantee -->
+    <section class="container py-5 my-lg-4" aria-labelledby="guaranteeTitle">
+      <div class="guarantee" data-reveal>
+        <div class="row g-4 align-items-center">
+          <div class="col-lg-6">
+            <div class="eyebrow mb-2">The no-double-booking rule</div>
+            <h2 id="guaranteeTitle" class="h1 fw-800">Every slot belongs to <span class="text-gradient">one</span> patient.</h2>
+            <p class="text-muted mb-0">Availability is worked out from real appointments and re-checked at the very last moment before saving — so even two browser tabs can’t grab the same time.</p>
+          </div>
+          <div class="col-lg-6">
+            <ul class="list-unstyled d-grid gap-3 mb-0">
+              <li class="rule-item"><span class="rule-icon"><i class="bi bi-shield-check" aria-hidden="true"></i></span><div><strong>One booking per slot</strong><div class="small text-muted">A slot holds at most one active appointment.</div></div></li>
+              <li class="rule-item"><span class="rule-icon"><i class="bi bi-intersect" aria-hidden="true"></i></span><div><strong>No overlapping visits</strong><div class="small text-muted">Patients can’t hold two appointments at the same time.</div></div></li>
+              <li class="rule-item"><span class="rule-icon"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></span><div><strong>Cancel frees the slot</strong><div class="small text-muted">Cancelled visits release the time and stay in history.</div></div></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
-  <footer class="container py-4 text-secondary small">Clinic Appointment App • OJT Project • Initial foundation</footer>
+
+  <div id="app-footer"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+  <script type="module" src="js/pages/home.js"></script>
 </body>
 </html>
