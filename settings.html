@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Settings · ClinicBook</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%2340e0d0'/><path d='M8 17h4l2-5 4 9 2-4h4' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="page-loader" id="pageLoader" aria-hidden="true"><div class="loader-mark"><span class="brand-mark"><i class="bi bi-heart-pulse-fill"></i></span>Loading…</div></div>
+  <div id="app-nav"></div>
+  <main id="main">
+    <section class="page-hero">
+      <div class="container position-relative" style="z-index:1">
+        <div class="eyebrow mb-1" data-animate>Settings</div>
+        <h1 class="mb-1" data-animate>Settings &amp; demo data</h1>
+        <p class="text-muted mb-0" data-animate>Log out or reset everything to the sample data.</p>
+      </div>
+    </section>
+    <div class="container py-4 py-lg-5">
+      <div class="row g-4">
+        <div class="col-lg-6">
+          <div class="card p-3 p-lg-4" data-animate>
+            <h2 class="h5 mb-3"><i class="bi bi-person-badge text-turq me-2" aria-hidden="true"></i>Current role</h2>
+            <div id="roleInfo"></div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card p-3 p-lg-4 mb-4" data-animate>
+            <h2 class="h5 mb-3"><i class="bi bi-database text-turq me-2" aria-hidden="true"></i>Demo data</h2>
+            <div class="row g-2 mb-3" id="dataCounts"></div>
+            <p class="small text-muted" id="savedAt"></p>
+            <button class="btn btn-outline-danger" id="resetBtn"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>Reset sample data</button>
+          </div>
+          <div class="card p-3 p-lg-4" data-animate>
+            <h2 class="h5 mb-3"><i class="bi bi-info-circle text-turq me-2" aria-hidden="true"></i>Known limitations</h2>
+            <ul class="small text-muted mb-0 ps-3">
+              <li class="mb-2">Data lives in this browser’s LocalStorage. It isn’t shared across devices or browsers.</li>
+              <li class="mb-2">LocalStorage isn’t a transactional database. Bookings re-check right before saving and tabs refresh on change, but true multi-user booking needs a server with a unique constraint per slot.</li>
+              <li class="mb-2">Roles are a demonstration login, not security.</li>
+              <li>All names and phone numbers are fictional. Don’t enter real health information.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <div id="app-footer"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+  <script type="module" src="js/pages/settings.js"></script>
+</body>
+</html>

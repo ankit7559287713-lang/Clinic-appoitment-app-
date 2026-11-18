@@ -1,0 +1,13 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "clinicbook",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "serve.mjs"
+      ],
+      "port": 5730
+    }
+  ]
+}
