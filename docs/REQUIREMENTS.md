@@ -11,7 +11,7 @@
 | FR-06 | Patient can cancel an upcoming appointment | High |
 | FR-07 | Cancelled slot becomes available again | High |
 | FR-08 | Doctor can view schedule and manage unbooked slots | Medium |
-| FR-09 | Receptionist can book/cancel for a patient | Medium |
+| FR-09 | Receptionist can book/cancel for a patient and view all appointment statuses | Medium |
 | FR-10 | Forms validate required fields | High |
 
 ## Non-functional requirements

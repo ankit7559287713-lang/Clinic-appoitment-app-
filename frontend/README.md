@@ -21,13 +21,14 @@ npm test
 
 ## Roles (demonstration login)
 
-Patients and doctors have separate login pages. There are no passwords (real authentication is out of scope): a patient signs in with their registered phone number (e.g. `555-010-2001`) and a doctor with their staff ID (e.g. `DOC-101`), or by clicking one of the demo accounts listed on the page. The login is stored per browser tab (sessionStorage), so you can open two tabs as different patients to see conflict protection live.
+Patients and doctors have separate login pages. There are no passwords (real authentication is out of scope): a patient signs in with their registered phone number (e.g. `555-010-2001`) a doctor with their staff ID (e.g. `DOC-101`) and a receptionist with `REC-001`, or by clicking one of the demo accounts listed on the page. The login is stored per browser tab (sessionStorage), so you can open two tabs as different patients to see conflict protection live.
 
 | Role | Can do |
 |---|---|
 | **Patient** | Browse doctors, see Available/Booked slots, book with a reason, view & cancel own appointments |
 | **Patient (reviews)** | Rate a completed visit 1–5 stars with an optional comment; edit or delete own reviews |
 | **Doctor** | Add/remove own unbooked slots (no overlaps), view day schedule, mark appointments completed |
+| **Receptionist** | Sign in with `REC-001`, book for registered patients, cancel appointments and view all appointment statuses |
 
 ## Screens
 
@@ -36,6 +37,8 @@ Patients and doctors have separate login pages. There are no passwords (real aut
 | `index.html` | Landing page with links to both logins |
 | `patient-login.html` | Patient login (phone number) |
 | `doctor-login.html` | Doctor login (staff ID) |
+| `receptionist-login.html` | Receptionist login (staff ID) |
+| `receptionist.html` | Receptionist appointment desk |
 | `doctors.html` | Doctor directory (search, specialty filter, next available) |
 | `book.html` | Slot picker + booking modal / confirmation |
 | `appointments.html` | My Appointments (patient) |
@@ -81,11 +84,11 @@ Pages listen for the browser `storage` event and re-render, so other tabs see ch
 5. Reviews show the patient as first name + last initial, with a “Verified visit” badge.
 
 ### Tests cover
-Two patients booking the same slot · the same booking submitted twice · cancel then rebook · overlapping doctor slots · a patient overlapping across two doctors · booking a past slot · cancelling an already-cancelled appointment · completion rules · slot removal rules · role checks · validators · review rules (ownership, completed-only, one per visit, rating range, edit/delete, average) · sample data integrity.
+Two patients booking the same slot · the same booking submitted twice · cancel then rebook · overlapping doctor slots · a patient overlapping across two doctors · booking a past slot · cancelling an already-cancelled appointment · completion rules · slot removal rules · role checks · receptionist assisted booking/cancellation · validators · review rules (ownership, completed-only, one per visit, rating range, edit/delete, average) · sample data integrity.
 
 ## Known limitations
 - Data lives in this browser's LocalStorage; it isn't shared across devices or browsers.
 - LocalStorage isn't transactional. True multi-user booking needs a server enforcing a unique constraint per slot.
-- Roles are a demonstration login, not security.
+- Roles are a demonstration login, not security. Receptionist records remain local to this browser and are not shared across devices.
 - All data is fictional. Don't enter real health information.
 - Animations respect `prefers-reduced-motion`.

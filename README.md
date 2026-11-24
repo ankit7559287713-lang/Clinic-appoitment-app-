@@ -3,7 +3,7 @@
 A two-member OJT project focused on organizing clinic appointment scheduling for patients, doctors and receptionists.
 
 ## Project status
-**Working frontend prototype (ClinicBook).** The browser app in `frontend/` implements the patient and doctor workflows on sample data in LocalStorage, with automated tests for the booking rules. The backend remains future scope.
+**Working frontend prototype (ClinicBook).** The browser app in `frontend/` implements the patient and doctor workflows on sample data in LocalStorage, with automated tests for the booking rules. The backend remains future scope; receptionist workflows run in the browser prototype.
 
 ## Technology stack
 - Frontend: HTML5, CSS3, JavaScript ES6 modules, Bootstrap 5, GSAP (animations)
@@ -15,7 +15,7 @@ A two-member OJT project focused on organizing clinic appointment scheduling for
 ## User roles
 - **Patient:** sign in with a registered phone number; browse doctors, view slots, book and cancel appointments, and review completed visits
 - **Doctor:** sign in with a staff ID; manage availability, view the day's schedule, mark visits completed and read patient reviews
-- **Receptionist:** planned; not part of the current prototype
+- **Receptionist:** demo login (`REC-001`); can book/cancel for registered patients and view all appointment statuses
 
 ## Repository structure
 ```text
@@ -31,9 +31,11 @@ The app uses JavaScript modules, so it must be served (opening the file directly
 - **VS Code:** right-click `frontend/index.html` → **Open with Live Server**, or
 - **Node:** `cd frontend && npm start`, then open http://localhost:5730
 
-Demo logins (fictional data): patient phone `555-010-2001`, doctor staff ID `DOC-101`, or click any demo account on the login pages.
+Demo logins (fictional data): patient phone `555-010-2001`, doctor staff ID `DOC-101`, receptionist staff ID `REC-001`, or click any demo account on the login pages.
 
 Run the booking-rule tests: `cd frontend && npm test`
+
+Receptionist dashboard: `frontend/receptionist.html` (sign in with `REC-001`).
 
 See [frontend/README.md](frontend/README.md) for screens, architecture and rules.
 
