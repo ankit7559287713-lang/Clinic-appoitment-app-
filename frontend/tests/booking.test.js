@@ -131,7 +131,7 @@ test('role guard limits pages and actions', () => {
   assert.equal(canAccessPage(null, 'settings'), true);
   assert.equal(can(doctor('d1'), 'book', { patientId: 'p1' }), false);
   assert.equal(canAccessPage('patient', 'frontdesk'), false);
-  assert.equal(can({ role: 'receptionist' }, 'book', { patientId: 'p1' }), false, 'removed role has no permissions');
+  assert.equal(can({ role: 'receptionist', receptionistId: 'rec1' }, 'book', { patientId: 'p1' }), true, 'receptionist can book for a patient');
 });
 
 test('patient login matches a registered phone number', () => {
