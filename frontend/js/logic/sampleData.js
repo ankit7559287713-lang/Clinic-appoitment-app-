@@ -161,6 +161,7 @@ export function buildSampleData(now = new Date()) {
     generatedAt: now.toISOString(),
     doctors,
     patients,
+    receptionists: [{ receptionistId: 'rec1', staffId: 'REC-001', name: 'Reception Desk' }],
     slots,
     appointments,
     reviews,

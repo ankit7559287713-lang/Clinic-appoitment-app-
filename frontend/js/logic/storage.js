@@ -65,6 +65,8 @@ export function loadData(now = new Date()) {
     throw new StorageError('Saved clinic data is corrupted.', err);
   }
   if (!parsed || parsed.version !== DATA_VERSION || !Array.isArray(parsed.slots)) return resetData(now);
+  // Backward-compatible additive field: preserve existing browser bookings.
+  if (!Array.isArray(parsed.receptionists)) parsed.receptionists = [{ receptionistId: 'rec1', staffId: 'REC-001', name: 'Reception Desk' }];
   return parsed;
 }
 

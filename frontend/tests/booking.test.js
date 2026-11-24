@@ -6,7 +6,7 @@ import { bookAppointment, cancelAppointment, completeAppointment } from '../js/l
 import { addSlot, removeSlot, listSlots, isSlotBooked } from '../js/logic/slotService.js';
 import { validatePatient, validateSlotInput } from '../js/logic/validators.js';
 import { can, canAccessPage } from '../js/logic/roleGuard.js';
-import { loginPatient, loginDoctor } from '../js/logic/authService.js';
+import { loginPatient, loginDoctor, loginReceptionist } from '../js/logic/authService.js';
 import { addReview, updateReview, deleteReview, doctorRating, reviewForAppointment, visitsAwaitingReview } from '../js/logic/reviewService.js';
 import { toISODate, addDays } from '../js/logic/dateUtils.js';
 
@@ -131,7 +131,7 @@ test('role guard limits pages and actions', () => {
   assert.equal(canAccessPage(null, 'settings'), true);
   assert.equal(can(doctor('d1'), 'book', { patientId: 'p1' }), false);
   assert.equal(canAccessPage('patient', 'frontdesk'), false);
-  assert.equal(can({ role: 'receptionist' }, 'book', { patientId: 'p1' }), false, 'removed role has no permissions');
+  assert.equal(can({ role: 'receptionist', receptionistId: 'rec1' }, 'book', { patientId: 'p1' }), true, 'receptionist can book for a patient');
 });
 
 test('patient login matches a registered phone number', () => {
@@ -228,4 +228,31 @@ test('sample data has no double bookings', () => {
   const data = loadData(NOW);
   const active = data.appointments.filter((a) => a.status === 'Booked');
   assert.equal(new Set(active.map((a) => a.slotId)).size, active.length);
+});
+
+
+test('receptionist can sign in, book for a patient and cancel with visible audit details', () => {
+  const data = loadData(NOW);
+  const signedIn = loginReceptionist(data, 'rec-001');
+  assert.equal(signedIn.ok, true);
+  const actor = signedIn.session;
+  assert.equal(canAccessPage('receptionist', 'receptionist'), true);
+  const slot = freeSlot('d3', day(6));
+  const booked = bookAppointment({ slotId: slot.slotId, patientId: 'p2', reason: 'Front desk booking', actor }, NOW);
+  assert.equal(booked.ok, true);
+  assert.equal(booked.appointment.createdByRole, 'receptionist');
+  assert.equal(booked.appointment.createdById, 'rec1');
+  const cancelled = cancelAppointment({ appointmentId: booked.appointment.appointmentId, actor }, NOW);
+  assert.equal(cancelled.ok, true);
+  const saved = loadData(NOW).appointments.find((a) => a.appointmentId === booked.appointment.appointmentId);
+  assert.equal(saved.status, 'Cancelled');
+  assert.equal(saved.cancelledByRole, 'receptionist');
+  assert.equal(saved.cancelledById, 'rec1');
+  assert.equal(isSlotBooked(loadData(NOW), slot.slotId), false);
+});
+test('patients cannot access receptionist desk or cancel another patient appointment', () => {
+  assert.equal(canAccessPage('patient', 'receptionist'), false);
+  const slot = freeSlot('d4', day(7));
+  const booked = bookAppointment({ slotId: slot.slotId, patientId: 'p1', reason: 'Own booking', actor: patient('p1') }, NOW);
+  assert.equal(cancelAppointment({ appointmentId: booked.appointment.appointmentId, actor: patient('p2') }, NOW).code, 'UNAUTHORIZED');
 });

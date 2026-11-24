@@ -1,14 +1,14 @@
-# Backend – Planned
+# Backend – Future scope (not implemented)
 
-The initial project scope is a browser-based frontend using HTML, CSS, JavaScript ES6, Bootstrap 5 and LocalStorage.
+The approved initial PRD specifies a browser-based prototype using HTML, CSS, JavaScript ES6, Bootstrap 5 and LocalStorage. This directory intentionally contains no server, API, database or production authentication implementation.
 
-This folder reserves a place for future backend development. No API server, authentication service, database connection or backend business logic is implemented at this stage.
+The receptionist workflow is implemented in the frontend prototype and uses the same LocalStorage appointment store as patient and doctor screens. It supports assisted booking/cancellation and appointment visibility in the same browser profile. It is not shared across devices.
 
-## Proposed future responsibilities
-- Validate appointment requests on the server.
-- Enforce unique active doctor-slot bookings.
-- Prevent overlapping active appointments for a patient.
-- Provide secure authentication and role-based authorization.
-- Persist shared data in a central database.
+## Production backend responsibilities (future scope)
+- Secure patient and staff authentication with server-side role authorization.
+- Central persistence for patients, doctors, slots, appointments and audit events.
+- Transactional booking with a unique active booking constraint per slot.
+- Cancellation history and actor attribution.
+- Server-side validation, backups, monitoring, HTTPS and privacy/security review.
 
-A backend framework and database should be selected only after approval of the expanded project scope.
+A real backend/database requires a formally approved PRD scope change. Do not treat demo role selection or LocalStorage as production security.
