@@ -22,3 +22,11 @@ export function loginDoctor(data, staffId = '') {
   if (!doctor) return fail('NOT_FOUND', 'We couldn’t find a doctor with that staff ID. Try one of the demo accounts below.');
   return ok({ doctor, session: { role: 'doctor', doctorId: doctor.doctorId } });
 }
+
+export function loginReceptionist(data, staffId = '') {
+  const id = String(staffId).trim().toUpperCase().replace(/\s+/g, '');
+  if (!id) return fail('INVALID_INPUT', 'Enter your receptionist staff ID.');
+  const receptionist = (data.receptionists || []).find((r) => r.staffId === id);
+  if (!receptionist) return fail('NOT_FOUND', 'Receptionist not found. Use the demo account REC-001.');
+  return ok({ receptionist, session: { role: 'receptionist', receptionistId: receptionist.receptionistId } });
+}

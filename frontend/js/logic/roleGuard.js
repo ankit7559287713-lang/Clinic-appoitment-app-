@@ -1,11 +1,11 @@
 // Demo role checks. Not security — the front end can always be modified.
-export const ROLES = { PATIENT: 'patient', DOCTOR: 'doctor' };
+export const ROLES = { PATIENT: 'patient', DOCTOR: 'doctor', RECEPTIONIST: 'receptionist' };
 
-export const ROLE_LABELS = { patient: 'Patient', doctor: 'Doctor' };
+export const ROLE_LABELS = { patient: 'Patient', doctor: 'Doctor', receptionist: 'Receptionist' };
 
-export const HOME_PAGE = { patient: 'doctors.html', doctor: 'schedule.html' };
+export const HOME_PAGE = { patient: 'doctors.html', doctor: 'schedule.html', receptionist: 'receptionist.html' };
 
-export const LOGIN_PAGE = { patient: 'patient-login.html', doctor: 'doctor-login.html' };
+export const LOGIN_PAGE = { patient: 'patient-login.html', doctor: 'doctor-login.html', receptionist: 'receptionist-login.html' };
 
 /** Which role a page belongs to (used to send signed-out visitors to the right login). */
 export function roleForPage(page) {
@@ -18,10 +18,12 @@ const PAGE_ACCESS = {
   settings: 'any',
   'patient-login': 'any',
   'doctor-login': 'any',
+  'receptionist-login': 'any',
   doctors: ['patient'],
   book: ['patient'],
   appointments: ['patient'],
   schedule: ['doctor'],
+  receptionist: ['receptionist'],
 };
 
 export function canAccessPage(role, page) {
@@ -40,9 +42,9 @@ export function can(actor, action, ctx = {}) {
   const { role } = actor;
   switch (action) {
     case 'book':
-      return role === 'patient' && ctx.patientId === actor.patientId;
+      return (role === 'patient' && ctx.patientId === actor.patientId) || role === 'receptionist';
     case 'cancel':
-      return role === 'patient' && ctx.appointment?.patientId === actor.patientId;
+      return (role === 'patient' && ctx.appointment?.patientId === actor.patientId) || role === 'receptionist';
     case 'review':
       return role === 'patient' && ctx.patientId === actor.patientId;
     case 'complete':

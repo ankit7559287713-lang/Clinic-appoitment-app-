@@ -3,10 +3,10 @@
 import { initPage, $, escapeHtml, avatar, showFieldErrors, clearFieldErrors, sessionPerson } from '../ui/common.js';
 import { setSession, getSession } from '../ui/session.js';
 import { HOME_PAGE, ROLE_LABELS } from '../logic/roleGuard.js';
-import { loginPatient, loginDoctor } from '../logic/authService.js';
+import { loginPatient, loginDoctor, loginReceptionist } from '../logic/authService.js';
 import { canAnimate, shake, popIn } from '../ui/motion.js';
 
-const role = document.body.dataset.loginRole === 'doctor' ? 'doctor' : 'patient';
+const role = ['patient', 'doctor', 'receptionist'].includes(document.body.dataset.loginRole) ? document.body.dataset.loginRole : 'patient';
 let ctxRef;
 
 function renderContinue() {
@@ -24,7 +24,7 @@ function renderDemoAccounts(animate) {
   const { data } = ctxRef;
   const accounts = role === 'patient'
     ? data.patients.map((p) => ({ person: p, id: p.phone, sub: p.phone }))
-    : data.doctors.map((d) => ({ person: d, id: d.staffId, sub: d.staffId }));
+    : role === 'doctor' ? data.doctors.map((d) => ({ person: d, id: d.staffId, sub: d.staffId })) : (data.receptionists || []).map((r) => ({ person: r, id: r.staffId, sub: r.staffId }));
   $('#demoAccounts').innerHTML = accounts.map((a) => `<div class="col">
     <button type="button" class="demo-account" data-identifier="${escapeHtml(a.id)}" aria-label="Sign in as ${escapeHtml(a.person.name)}">
       ${avatar(a.person, 'avatar-sm')}
@@ -35,7 +35,7 @@ function renderDemoAccounts(animate) {
 
 function signIn(identifier) {
   const form = $('#loginForm');
-  const res = role === 'patient' ? loginPatient(ctxRef.data, identifier) : loginDoctor(ctxRef.data, identifier);
+  const res = role === 'patient' ? loginPatient(ctxRef.data, identifier) : role === 'doctor' ? loginDoctor(ctxRef.data, identifier) : loginReceptionist(ctxRef.data, identifier);
   if (!res.ok) {
     showFieldErrors(form, { identifier: res.message });
     shake($('#authCard'));

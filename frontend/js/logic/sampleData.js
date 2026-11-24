@@ -2,7 +2,7 @@
 // past, today, full, empty, cancelled and overlapping scenarios.
 import { toISODate, addDays, startOfDay, timeToMinutes, minutesToTime, toDateTime } from './dateUtils.js';
 
-export const DATA_VERSION = 3;
+export const DATA_VERSION = 4;
 
 export function buildSampleData(now = new Date()) {
   const today = startOfDay(now);
@@ -161,6 +161,7 @@ export function buildSampleData(now = new Date()) {
     generatedAt: now.toISOString(),
     doctors,
     patients,
+    receptionists: [{ receptionistId: 'rec1', staffId: 'REC-001', name: 'Reception Desk' }],
     slots,
     appointments,
     reviews,

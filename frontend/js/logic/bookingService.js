@@ -54,6 +54,8 @@ export function bookAppointment({ slotId, patientId, reason, actor }, now = new 
       reason: reason.trim(),
       status: 'Booked',
       createdAt: now.toISOString(),
+      createdByRole: actor.role,
+      createdById: actor.receptionistId || actor.patientId || actor.doctorId || null,
       cancelledAt: null,
       completedAt: null,
     };
@@ -71,6 +73,8 @@ export function cancelAppointment({ appointmentId, actor }, now = new Date()) {
     if (appt.status !== 'Booked') return fail('INVALID_STATUS', 'Completed appointments cannot be cancelled.');
     appt.status = 'Cancelled';
     appt.cancelledAt = now.toISOString();
+    appt.cancelledByRole = actor.role;
+    appt.cancelledById = actor.receptionistId || actor.patientId || actor.doctorId || null;
     return ok({ appointment: appt });
   });
 }

@@ -76,6 +76,7 @@ const NAV = {
     { page: 'appointments', href: 'appointments.html', label: 'My Appointments', icon: 'bi-calendar2-check' },
   ],
   doctor: [{ page: 'schedule', href: 'schedule.html', label: 'My Schedule', icon: 'bi-calendar-week' }],
+  receptionist: [{ page: 'receptionist', href: 'receptionist.html', label: 'Appointments desk', icon: 'bi-clipboard2-check' }],
   guest: [
     { page: 'how', href: 'index.html#how', label: 'How it works', icon: 'bi-lightning-charge' },
     { page: 'patient-login', href: 'patient-login.html', label: 'Patient login', icon: 'bi-person-heart' },
@@ -87,6 +88,7 @@ export function sessionPerson(session, data) {
   if (!session || !data) return null;
   if (session.role === 'patient') return data.patients.find((p) => p.patientId === session.patientId) || null;
   if (session.role === 'doctor') return data.doctors.find((d) => d.doctorId === session.doctorId) || null;
+  if (session.role === 'receptionist') return (data.receptionists || []).find((r) => r.receptionistId === session.receptionistId) || null;
   return null;
 }
 
