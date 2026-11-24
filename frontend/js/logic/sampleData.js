@@ -2,7 +2,7 @@
 // past, today, full, empty, cancelled and overlapping scenarios.
 import { toISODate, addDays, startOfDay, timeToMinutes, minutesToTime, toDateTime } from './dateUtils.js';
 
-export const DATA_VERSION = 4;
+export const DATA_VERSION = 3;
 
 export function buildSampleData(now = new Date()) {
   const today = startOfDay(now);
