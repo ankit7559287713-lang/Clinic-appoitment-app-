@@ -21,8 +21,8 @@ const AVATAR_GRADIENTS = [
   'linear-gradient(135deg,#40e0d0,#0b8076)',
   'linear-gradient(135deg,#67e0d3,#0e9f92)',
   'linear-gradient(135deg,#1cc2b2,#0b4f4a)',
-  'linear-gradient(135deg,#5eead4,#2563eb)',
-  'linear-gradient(135deg,#40e0d0,#6366f1)',
+  'linear-gradient(135deg,#5eead4,#0b8076)',
+  'linear-gradient(135deg,#40e0d0,#0e9f92)',
   'linear-gradient(135deg,#a0efe6,#0b8076)',
 ];
 export function avatar(person, cls = '') {
@@ -37,9 +37,22 @@ const STATUS_ICON = {
   Cancelled: 'bi-x-circle',
   Completed: 'bi-check2-all',
   Past: 'bi-clock-history',
+  'Pending Verification': 'bi-hourglass-split',
+  pending_approval: 'bi-hourglass-split',
+  Approved: 'bi-check-circle',
+  'In Progress': 'bi-activity',
+  'Legacy Accepted': 'bi-clock-history',
+  rejected: 'bi-x-circle',
 };
 export function statusBadge(status) {
-  return `<span class="status-badge status-${status}"><i class="bi ${STATUS_ICON[status] || 'bi-dot'}" aria-hidden="true"></i>${status}</span>`;
+  const key = status === 'pending_approval'
+    ? 'Pending-Verification'
+    : status === 'rejected'
+      ? 'Rejected'
+    : String(status).replace(/[^a-zA-Z0-9_-]+/g, '-');
+  const label = status === 'pending_approval' ? 'Pending approval' :
+    status === 'rejected' ? 'Rejected' : status;
+  return `<span class="status-badge status-${escapeHtml(key)}"><i class="bi ${STATUS_ICON[status] || 'bi-dot'}" aria-hidden="true"></i>${escapeHtml(label)}</span>`;
 }
 
 export function dateBlock(iso) {
@@ -51,7 +64,7 @@ export function dateBlock(iso) {
   </div>`;
 }
 
-export const timeRange = (a) => `${formatTime(a.startTime)} – ${formatTime(a.endTime)}`;
+export const timeRange = (a) => `${formatTime(a.startTime)} – ${formatTime(a.blockEndTime || a.endTime)}`;
 export const whenText = (a) => `${formatDate(a.date)} · ${timeRange(a)}`;
 
 export function emptyState({ icon = 'bi-calendar2-x', title, text = '', action = '' }) {

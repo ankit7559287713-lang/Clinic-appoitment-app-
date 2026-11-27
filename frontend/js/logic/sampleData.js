@@ -2,35 +2,35 @@
 // past, today, full, empty, cancelled and overlapping scenarios.
 import { toISODate, addDays, startOfDay, timeToMinutes, minutesToTime, toDateTime } from './dateUtils.js';
 
-export const DATA_VERSION = 3;
+export const DATA_VERSION = 6;
 
 export function buildSampleData(now = new Date()) {
   const today = startOfDay(now);
 
   const doctors = [
-    { doctorId: 'd1', staffId: 'DOC-101', name: 'Dr. Ananya Rao', specialty: 'General Physician', experience: 12, room: 'Room 101', status: 'active', bio: 'Everyday care, annual check-ups and long-term condition reviews.' },
-    { doctorId: 'd2', staffId: 'DOC-204', name: 'Dr. Marcus Chen', specialty: 'Cardiologist', experience: 15, room: 'Room 204', status: 'active', bio: 'Heart health, blood pressure management and ECG follow-ups.' },
-    { doctorId: 'd3', staffId: 'DOC-112', name: 'Dr. Sofia Alvarez', specialty: 'Dermatologist', experience: 8, room: 'Room 112', status: 'active', bio: 'Skin, hair and nail concerns for all ages.' },
-    { doctorId: 'd4', staffId: 'DOC-007', name: 'Dr. Kwame Mensah', specialty: 'Pediatrician', experience: 10, room: 'Room 007', status: 'active', bio: 'Child wellness visits, vaccinations and growth checks.' },
-    { doctorId: 'd5', staffId: 'DOC-310', name: 'Dr. Priya Nair', specialty: 'Orthopedic Surgeon', experience: 14, room: 'Room 310', status: 'active', bio: 'Joint pain, sports injuries and bone health.' },
-    { doctorId: 'd6', staffId: 'DOC-215', name: "Dr. Liam O'Connor", specialty: 'ENT Specialist', experience: 9, room: 'Room 215', status: 'on-leave', bio: 'Ear, nose and throat care. Currently on leave.' },
+    { doctorId: 'd1', staffId: 'DOC-101', name: 'Dr. Ananya Rao', specialty: 'General Physician', experience: 12, room: 'Room 101', status: 'active', bio: 'Everyday care, annual check-ups and long-term condition reviews.', qualification: 'MBBS, MD (General Medicine)', expertise: ['Preventive care', 'Diabetes management'], conditionsTreated: ['Fever', 'Hypertension', 'Diabetes'], consultationFee: 600, consultationMode: 'In-person · 15 minutes' },
+    { doctorId: 'd2', staffId: 'DOC-204', name: 'Dr. Marcus Chen', specialty: 'Cardiologist', experience: 15, room: 'Room 204', status: 'active', bio: 'Heart health, blood pressure management and ECG follow-ups.', qualification: 'MBBS, DM (Cardiology)', expertise: ['ECG review', 'Heart health'], conditionsTreated: ['Hypertension', 'Palpitations', 'Chest discomfort'], consultationFee: 900, consultationMode: 'In-person · 15 minutes' },
+    { doctorId: 'd3', staffId: 'DOC-112', name: 'Dr. Sofia Alvarez', specialty: 'Dermatologist', experience: 8, room: 'Room 112', status: 'active', bio: 'Skin, hair and nail concerns for all ages.', qualification: 'MBBS, MD (Dermatology)', expertise: ['Clinical dermatology', 'Skin care'], conditionsTreated: ['Acne', 'Eczema', 'Rashes'], consultationFee: 700, consultationMode: 'In-person · 15 minutes' },
+    { doctorId: 'd4', staffId: 'DOC-007', name: 'Dr. Kwame Mensah', specialty: 'Pediatrician', experience: 10, room: 'Room 007', status: 'active', bio: 'Child wellness visits, vaccinations and growth checks.', qualification: 'MBBS, MD (Pediatrics)', expertise: ['Child wellness', 'Vaccinations'], conditionsTreated: ['Common infections', 'Growth concerns'], consultationFee: 650, consultationMode: 'In-person · 15 minutes' },
+    { doctorId: 'd5', staffId: 'DOC-310', name: 'Dr. Priya Nair', specialty: 'Orthopedic Surgeon', experience: 14, room: 'Room 310', status: 'active', bio: 'Joint pain, sports injuries and bone health.', qualification: 'MBBS, MS (Orthopaedics)', expertise: ['Sports injuries', 'Joint care'], conditionsTreated: ['Knee pain', 'Sprains', 'Joint stiffness'], consultationFee: 800, consultationMode: 'In-person · 15 minutes' },
+    { doctorId: 'd6', staffId: 'DOC-215', name: "Dr. Liam O'Connor", specialty: 'ENT Specialist', experience: 9, room: 'Room 215', status: 'on-leave', bio: 'Ear, nose and throat care. Currently on leave.', qualification: 'MBBS, MS (ENT)', expertise: ['Ear and sinus care'], conditionsTreated: ['Sinus pain', 'Ear infection'], consultationFee: 700, consultationMode: 'In-person · 15 minutes' },
   ];
 
   const patients = [
-    { patientId: 'p1', name: 'Aarav Sharma', phone: '555-010-2001', email: 'aarav@example.com' },
-    { patientId: 'p2', name: 'Emily Johnson', phone: '555-010-2002', email: 'emily@example.com' },
-    { patientId: 'p3', name: 'Rahul Verma', phone: '555-010-2003', email: '' },
-    { patientId: 'p4', name: 'Fatima Khan', phone: '555-010-2004', email: 'fatima@example.com' },
-    { patientId: 'p5', name: 'Diego Morales', phone: '555-010-2005', email: '' },
-    { patientId: 'p6', name: 'Mei Lin', phone: '555-010-2006', email: 'mei@example.com' },
+    { patientId: 'p1', name: 'Aarav Sharma', phone: '9876501001', email: 'aarav.sharma@example.in', age: 34, gender: 'Male', address: 'Demo address 1, ClinicBook' },
+    { patientId: 'p2', name: 'Nisha Iyer', phone: '9876501002', email: 'nisha.iyer@example.in', age: 29, gender: 'Female', address: 'Demo address 2, ClinicBook' },
+    { patientId: 'p3', name: 'Rahul Verma', phone: '9876501003', email: 'rahul.verma@example.in', age: 42, gender: 'Male', address: 'Demo address 3, ClinicBook' },
+    { patientId: 'p4', name: 'Fatima Khan', phone: '9876501004', email: 'fatima.khan@example.in', age: 36, gender: 'Female', address: 'Demo address 4, ClinicBook' },
+    { patientId: 'p5', name: 'Arjun Patel', phone: '9876501005', email: 'arjun.patel@example.in', age: 31, gender: 'Male', address: 'Demo address 5, ClinicBook' },
+    { patientId: 'p6', name: 'Kavya Menon', phone: '9876501006', email: 'kavya.menon@example.in', age: 27, gender: 'Female', address: 'Demo address 6, ClinicBook' },
   ];
 
   const schedules = {
     d1: { duration: 30, times: ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '14:00', '14:30', '15:00', '15:30'] },
-    d2: { duration: 45, times: ['10:00', '10:45', '11:30', '12:15', '15:00', '15:45'] },
-    d3: { duration: 20, times: ['09:00', '09:20', '09:40', '10:00', '10:20', '10:40', '16:00', '16:20', '16:40'] },
+    d2: { duration: 30, times: ['10:00', '10:30', '11:00', '11:30', '15:00', '15:30'] },
+    d3: { duration: 30, times: ['09:00', '09:30', '10:00', '10:30', '16:00', '16:30'] },
     d4: { duration: 30, times: ['08:30', '09:00', '09:30', '10:00', '10:30', '13:00', '13:30', '14:00'] },
-    d5: { duration: 60, times: ['11:00', '12:00', '14:00', '15:00', '16:00'] },
+    d5: { duration: 30, times: ['11:00', '12:00', '14:00', '15:00', '16:00'] },
   };
   // Empty days (no slots published) for some doctors.
   const offDays = { d3: [2], d5: [3, 4] };
@@ -47,6 +47,9 @@ export function buildSampleData(now = new Date()) {
           date,
           startTime: t,
           endTime: minutesToTime(timeToMinutes(t) + s.duration),
+          consultationEndTime: minutesToTime(timeToMinutes(t) + 15),
+          emergencyBufferStartTime: minutesToTime(timeToMinutes(t) + 15),
+          emergencyBufferEndTime: minutesToTime(timeToMinutes(t) + s.duration),
         });
       }
     }
@@ -66,7 +69,9 @@ export function buildSampleData(now = new Date()) {
       patientId,
       date: slot.date,
       startTime: slot.startTime,
-      endTime: slot.endTime,
+      endTime: slot.consultationEndTime,
+      blockEndTime: slot.endTime,
+      consultationEndTime: slot.consultationEndTime,
       reason,
       status,
       createdAt: addDays(today, Math.min(offset, 0) - 3).toISOString(),
@@ -102,60 +107,6 @@ export function buildSampleData(now = new Date()) {
   book('d4', 5, '09:30', 'p4', 'Booked', 'Routine paediatric check-up');
   book('d1', 5, '11:00', 'p5', 'Booked', 'Diabetes review');
 
-  // Older completed visits (before the published slot range), so doctors have review history.
-  const archive = (doctorId, daysAgo, time, minutes, patientId, reason) => {
-    const date = toISODate(addDays(today, -daysAgo));
-    const id = `a-h${String(++n).padStart(3, '0')}`;
-    appointments.push({
-      appointmentId: id,
-      slotId: `s-archive-${id}`,
-      doctorId,
-      patientId,
-      date,
-      startTime: time,
-      endTime: minutesToTime(timeToMinutes(time) + minutes),
-      reason,
-      status: 'Completed',
-      createdAt: addDays(today, -daysAgo - 4).toISOString(),
-      cancelledAt: null,
-      completedAt: toDateTime(date, time).toISOString(),
-    });
-    return id;
-  };
-
-  // Patient reviews. Each one belongs to a completed visit by that patient.
-  const reviews = [];
-  const review = (appointmentId, rating, comment, daysAfter = 1) => {
-    const a = appointments.find((x) => x.appointmentId === appointmentId);
-    if (!a) return;
-    reviews.push({
-      reviewId: `r-${String(reviews.length + 1).padStart(3, '0')}`,
-      appointmentId,
-      doctorId: a.doctorId,
-      patientId: a.patientId,
-      rating,
-      comment,
-      createdAt: addDays(toDateTime(a.date, a.endTime), daysAfter).toISOString(),
-      updatedAt: null,
-    });
-  };
-  const idOf = (doctorId, patientId, status = 'Completed') =>
-    appointments.find((a) => a.doctorId === doctorId && a.patientId === patientId && a.status === status)?.appointmentId;
-
-  review(archive('d1', 30, '10:00', 30, 'p1', 'Seasonal flu'), 5, 'Always listens carefully and never rushes. Felt better within days.');
-  review(archive('d1', 21, '11:30', 30, 'p2', 'Routine blood work'), 5, 'Very thorough and kind. Explained every result clearly.', 2);
-  review(archive('d1', 12, '14:00', 30, 'p4', 'Headaches'), 4, 'Short wait and practical advice.');
-  review(archive('d2', 40, '10:45', 45, 'p1', 'Palpitations'), 5, 'Clear explanation of my ECG. I left feeling reassured.');
-  review(archive('d2', 18, '15:00', 45, 'p6', 'Cholesterol review'), 4, 'Professional and knowledgeable, though the visit felt a little rushed.');
-  review(idOf('d2', 'p2'), 5, 'Great follow-up — he remembered my history.');
-  review(idOf('d3', 'p3'), 5, 'The rash cleared up within a week. Thank you!');
-  review(archive('d3', 25, '09:40', 20, 'p6', 'Eczema flare-up'), 4, 'Helpful skincare plan, easy to follow.');
-  review(archive('d4', 35, '09:00', 30, 'p4', "Son's check-up"), 5, 'Wonderful with children — my son wasn’t scared at all.');
-  review(archive('d4', 16, '13:30', 30, 'p3', "Daughter's ear pain"), 5, 'Patient, gentle and explained everything to my daughter.', 2);
-  review(archive('d5', 28, '12:00', 60, 'p2', 'Ankle sprain'), 3, 'Good advice, but I waited about 20 minutes past my slot.');
-  review(idOf('d5', 'p5'), 4, 'Clear exercise plan for my knee. Already improving.');
-  review(archive('d6', 60, '11:00', 30, 'p6', 'Sinus pain'), 4, 'Knowledgeable and calm. Hope he’s back soon!');
-
   return {
     version: DATA_VERSION,
     generatedAt: now.toISOString(),
@@ -164,6 +115,56 @@ export function buildSampleData(now = new Date()) {
     receptionists: [{ receptionistId: 'rec1', staffId: 'REC-001', name: 'Reception Desk' }],
     slots,
     appointments,
-    reviews,
+    emergencyRequests: [],
+    queueEntries: [],
+    consultations: [
+      {
+        consultationId: 'c-demo-001', appointmentId: 'a-001', encounterId: 'a-001',
+        encounterType: 'Appointment', patientId: 'p1', doctorId: 'd1',
+        chiefComplaint: 'Routine annual check-up', diagnosis: 'Routine wellness review (fictional demo)',
+        symptoms: 'No acute concerns noted in this fictional sample.',
+        treatmentPlan: 'Routine follow-up discussion at the next visit.',
+        notes: 'Fictional sample consultation record. Not clinical advice.',
+        referralRequired: false, referralDoctor: '', referralReason: '', referralInstructions: '',
+        createdAt: addDays(today, -3).toISOString(), updatedAt: null,
+      },
+      {
+        consultationId: 'c-demo-002', appointmentId: 'a-002', encounterId: 'a-002',
+        encounterType: 'Appointment', patientId: 'p2', doctorId: 'd2',
+        chiefComplaint: 'Follow-up after ECG', diagnosis: 'Follow-up evaluation (fictional demo)',
+        symptoms: 'Demo observation only; no real patient information.',
+        treatmentPlan: 'Review at the next scheduled visit.',
+        notes: 'Fictional sample consultation record. Not clinical advice.',
+        referralRequired: true, referralDoctor: 'Demo specialist', referralReason: 'Example referral for UI testing.',
+        referralInstructions: 'Fictional demo instruction.',
+        createdAt: addDays(today, -3).toISOString(), updatedAt: null,
+      },
+      {
+        consultationId: 'c-demo-003', appointmentId: 'a-003', encounterId: 'a-003',
+        encounterType: 'Appointment', patientId: 'p3', doctorId: 'd3',
+        chiefComplaint: 'Skin concern follow-up', diagnosis: 'Demo skin review (fictional)',
+        symptoms: 'Fictional placeholder observation.',
+        treatmentPlan: 'Example follow-up plan for interface testing.',
+        notes: 'Fictional sample consultation record. Not clinical advice.',
+        referralRequired: false, referralDoctor: '', referralReason: '', referralInstructions: '',
+        createdAt: addDays(today, -2).toISOString(), updatedAt: null,
+      },
+    ],
+    prescriptions: [
+      {
+        prescriptionId: 'rx-demo-001', consultationId: 'c-demo-001', appointmentId: 'a-001',
+        encounterId: 'a-001', patientId: 'p1', doctorId: 'd1', medicineName: 'Demo medicine A',
+        dosage: '1 sample unit', frequency: 'Once daily', duration: '3 sample days',
+        instructions: 'Fictional placeholder; not for use.',
+        createdAt: addDays(today, -3).toISOString(), updatedAt: null,
+      },
+      {
+        prescriptionId: 'rx-demo-002', consultationId: 'c-demo-002', appointmentId: 'a-002',
+        encounterId: 'a-002', patientId: 'p2', doctorId: 'd2', medicineName: 'Demo medicine B',
+        dosage: '1 sample unit', frequency: 'As needed (demo)', duration: '1 sample day',
+        instructions: 'Fictional placeholder; not for use.',
+        createdAt: addDays(today, -3).toISOString(), updatedAt: null,
+      },
+    ],
   };
 }

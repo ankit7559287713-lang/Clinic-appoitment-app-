@@ -1,14 +1,15 @@
 // Doctor: day schedule, mark completed, add/remove slots.
 import { initPage, $, $$, escapeHtml, avatar, statusBadge, emptyState, toast, confirmDialog, showFieldErrors, clearFieldErrors, dayLabel } from '../ui/common.js';
-import { renderDayStrip, reviewsBlockHtml, bindReviewList } from '../ui/components.js';
-import { doctorRating, listDoctorReviews } from '../logic/reviewService.js';
+import { renderDayStrip } from '../ui/components.js';
 import { listSlots, addSlot, removeSlot } from '../logic/slotService.js';
-import { completeAppointment } from '../logic/bookingService.js';
+import { completeAppointment, startConsultation } from '../logic/bookingService.js';
+import { listEmergencyRequests, updateEmergencyCase } from '../logic/emergencyService.js';
+import { doctorQueueEntries } from '../logic/receptionService.js';
 import { validateSlotInput, hasErrors } from '../logic/validators.js';
 import { toISODate, addDays, parseISODate, formatLongDate, formatTime, timeToMinutes, minutesToTime, toDateTime } from '../logic/dateUtils.js';
-import { staggerIn, popIn, countUp, leave, shake, growBars } from '../ui/motion.js';
+import { staggerIn, popIn, countUp, leave, shake } from '../ui/motion.js';
 
-const state = { date: toISODate(new Date()), stripStart: toISODate(addDays(new Date(), -3)) };
+const state = { date: toISODate(new Date()), stripStart: toISODate(addDays(new Date(), -3)), appointmentView: 'today' };
 let ctxRef;
 
 
@@ -27,8 +28,9 @@ function renderAll(animate) {
   renderStrip();
   renderStats(animate);
   renderAppointments(animate);
+  renderDoctorQueues();
   renderSlotList(animate);
-  renderMyReviews(animate);
+  renderEmergencyRequests();
 }
 
 function renderStrip() {
@@ -70,28 +72,62 @@ function renderStats(animate) {
 
 function renderAppointments(animate) {
   const today = toISODate(new Date());
-  $('#apptTitle').textContent = `${dayLabel(state.date, today)} · ${formatLongDate(state.date)}`;
-  const appts = dayAppointments();
+  const appts = state.appointmentView === 'upcoming'
+    ? ctxRef.data.appointments
+      .filter((appointment) => appointment.doctorId === me().doctorId && appointment.status === 'Booked' &&
+        toDateTime(appointment.date, appointment.startTime) > new Date())
+      .sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime))
+    : dayAppointments();
+  $('#apptTitle').textContent = state.appointmentView === 'upcoming'
+    ? 'Upcoming appointments'
+    : `${dayLabel(state.date, today)} · ${formatLongDate(state.date)}`;
   const host = $('#dayAppointments');
   if (!appts.length) {
-    host.innerHTML = emptyState({ icon: 'bi-cup-hot', title: 'No appointments on this day', text: 'Add open slots so patients can book you.', action: '<button class="btn btn-primary" data-focus-add><i class="bi bi-plus-lg" aria-hidden="true"></i>Add slots</button>' });
+    host.innerHTML = state.appointmentView === 'upcoming'
+      ? emptyState({ icon: 'bi-calendar2-x', title: 'No upcoming appointments', text: 'New bookings will appear here.' })
+      : emptyState({ icon: 'bi-cup-hot', title: 'No appointments on this day', text: 'Add open slots so patients can book you.', action: '<button class="btn btn-primary" data-focus-add><i class="bi bi-plus-lg" aria-hidden="true"></i>Add slots</button>' });
     return;
   }
   host.innerHTML = `<ol class="timeline">${appts.map((a) => {
     const p = ctxRef.data.patients.find((x) => x.patientId === a.patientId) || { name: 'Unknown', phone: '' };
     const started = toDateTime(a.date, a.startTime) <= new Date();
     return `<li class="timeline-item is-${a.status}" data-id="${a.appointmentId}">
-      <div class="timeline-time">${formatTime(a.startTime)}<small>${formatTime(a.endTime)}</small></div>
+      <div class="timeline-time">${formatTime(a.startTime)}<small>${formatTime(a.blockEndTime || a.endTime)}</small></div>
       <div class="timeline-body">
         <div class="d-flex flex-wrap justify-content-between gap-2 mb-1">
           <div class="d-flex align-items-center gap-2 min-w-0">${avatar(p, 'avatar-sm')}<div class="min-w-0"><div class="fw-bold text-truncate">${escapeHtml(p.name)}</div><div class="small text-muted"><i class="bi bi-telephone me-1" aria-hidden="true"></i>${escapeHtml(p.phone)}</div></div></div>
           ${statusBadge(a.status)}
         </div>
-        <p class="small mb-2 mt-2"><i class="bi bi-chat-left-text text-turq me-1" aria-hidden="true"></i>${escapeHtml(a.reason)}</p>
+        <p class="small mb-2 mt-2"><i class="bi bi-chat-left-text text-turq me-1" aria-hidden="true"></i>${escapeHtml(a.reason)} <span class="text-muted">· Consultation: ${escapeHtml(a.consultationStatus || a.status)}</span></p>
+        <a class="btn btn-sm btn-outline-primary me-2" href="patient-record.html?patient=${encodeURIComponent(a.patientId)}&amp;appointment=${encodeURIComponent(a.appointmentId)}"><i class="bi bi-file-medical" aria-hidden="true"></i>Details &amp; clinical record</a>
+        ${a.status === 'Booked' && a.consultationStatus !== 'InProgress' ? `<button class="btn btn-sm btn-soft me-2" data-start="${a.appointmentId}"><i class="bi bi-play-fill" aria-hidden="true"></i>Start consultation</button>` : ''}
         ${a.status === 'Booked' ? `<button class="btn btn-sm ${started ? 'btn-primary' : 'btn-soft'}" data-complete="${a.appointmentId}"><i class="bi bi-check2-all" aria-hidden="true"></i>Mark completed</button>` : ''}
       </div></li>`;
   }).join('')}</ol>`;
   if (animate) staggerIn('#dayAppointments .timeline-item', { stagger: 0.07 });
+}
+
+function renderDoctorQueues() {
+  const entries = doctorQueueEntries(ctxRef.data, me().doctorId);
+  const normal = entries.filter((entry) => entry.entryType === 'WalkIn');
+  const emergencies = entries.filter((entry) => entry.entryType === 'EmergencyWalkIn');
+  const renderEntry = (entry, emergency = false) => {
+    const patient = ctxRef.data.patients.find((record) => record.patientId === entry.patientId);
+    return `<article class="border rounded-4 p-3 mb-2">
+      <div class="d-flex flex-wrap justify-content-between gap-2">
+        <strong>${entry.queueNumber ? `#${entry.queueNumber} · ` : ''}${escapeHtml(patient?.name || 'Unknown patient')}</strong>
+        <span>${emergency ? '<span class="badge text-bg-danger me-1">EMERGENCY</span>' : ''}${statusBadge(entry.status)}</span>
+      </div>
+      <div class="small text-muted">Arrived ${new Date(entry.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</div>
+      <a class="btn btn-sm btn-primary mt-2" href="patient-record.html?patient=${encodeURIComponent(entry.patientId)}&amp;encounterId=${encodeURIComponent(entry.queueId)}">Open ${emergency ? 'emergency' : 'walk-in'} record</a>
+    </article>`;
+  };
+  $('#doctorWalkInQueue').innerHTML = normal.length
+    ? normal.map((entry) => renderEntry(entry)).join('')
+    : '<p class="small text-muted mb-0">No assigned walk-in patients are waiting.</p>';
+  $('#doctorEmergencyWalkIns').innerHTML = emergencies.length
+    ? emergencies.map((entry) => renderEntry(entry, true)).join('')
+    : '<p class="small text-muted mb-0">No verified emergency walk-ins are assigned.</p>';
 }
 
 function renderSlotList(animate) {
@@ -112,21 +148,40 @@ function renderSlotList(animate) {
   if (animate) popIn('#slotList .slot-row');
 }
 
-let reviewsShown = false;
-function renderMyReviews(animate) {
-  const host = $('#myReviews');
-  const d = me();
-  host.innerHTML = reviewsBlockHtml(doctorRating(ctxRef.data, d.doctorId), listDoctorReviews(ctxRef.data, d.doctorId), ctxRef.data, {
-    limit: 4,
-    emptyText: 'No reviews yet. Patients can rate a visit once you mark it completed.',
+function renderEmergencyRequests() {
+  const host = $('#emergencyRequests');
+  const requests = listEmergencyRequests(ctxRef.data, { doctorId: me().doctorId });
+  if (!requests.length) {
+    host.innerHTML = '<p class="text-muted mb-0">No emergency requests.</p>';
+    return;
+  }
+  host.innerHTML = requests.map((request) => {
+    const patient = ctxRef.data.patients.find((entry) => entry.patientId === request.patientId);
+    const slot = request.slotId && ctxRef.data.slots.find((entry) => entry.slotId === request.slotId);
+    const hasRecord = (ctxRef.data.consultations || []).some((record) =>
+      record.encounterId === request.requestId && record.patientId === request.patientId && record.doctorId === request.doctorId,
+    );
+    return `<article class="border rounded-4 p-3 mb-2" data-emergency="${request.requestId}">
+      <div class="d-flex flex-wrap justify-content-between gap-2"><strong><span class="badge text-bg-danger me-1">EMERGENCY</span>${escapeHtml(patient?.name || 'Unknown patient')}</strong>${statusBadge(request.status)}</div>
+      <p class="small mb-2 mt-2">${escapeHtml(request.reason)}</p>
+      ${slot ? `<p class="small text-muted mb-2">Buffer assigned: ${formatLongDate(slot.date)}, ${formatTime(slot.emergencyBufferStartTime)}–${formatTime(slot.emergencyBufferEndTime)}</p>` : ''}
+      <a class="btn btn-sm btn-primary me-2" href="patient-record.html?patient=${encodeURIComponent(request.patientId)}&amp;encounterId=${encodeURIComponent(request.requestId)}">Open emergency patient record</a>
+      ${request.status === 'In Progress' && hasRecord ? `<button type="button" class="btn btn-sm btn-outline-success" data-complete-emergency="${escapeHtml(request.requestId)}">Complete emergency case</button>` : ''}
+    </article>`;
+  }).join('');
+}
+
+function renderAppointmentViewButtons() {
+  document.querySelectorAll('[data-appointment-view]').forEach((button) => {
+    const active = button.dataset.appointmentView === state.appointmentView;
+    button.className = `btn ${active ? 'btn-primary' : 'btn-soft'}`;
   });
-  bindReviewList(host, (items) => staggerIn(items, { stagger: 0.06 }));
-  // Only animate the bars the first time (date changes re-render the whole page).
-  if (animate && !reviewsShown) { growBars(host); reviewsShown = true; }
 }
 
 function setDate(iso) {
   state.date = iso;
+  state.appointmentView = 'today';
+  renderAppointmentViewButtons();
   const d = parseISODate(iso);
   const start = parseISODate(state.stripStart);
   const diff = Math.round((d - start) / 86400000);
@@ -136,11 +191,37 @@ function setDate(iso) {
 }
 
 function bindEvents() {
+  $('#main').addEventListener('click', (e) => {
+    const view = e.target.closest('[data-appointment-view]');
+    if (view) {
+      state.appointmentView = view.dataset.appointmentView;
+      renderAppointmentViewButtons();
+      renderAppointments(true);
+      return;
+    }
+    if (e.target.closest('[data-focus-add]')) $('#slotStart').focus();
+  });
   $('#dayStrip').addEventListener('click', (e) => { const c = e.target.closest('[data-date]'); if (c) setDate(c.dataset.date); });
   $('#datePicker').addEventListener('change', (e) => { if (e.target.value) setDate(e.target.value); });
-  $('#main').addEventListener('click', (e) => { if (e.target.closest('[data-focus-add]')) $('#slotStart').focus(); });
+  $('#emergencyRequests').addEventListener('click', (e) => {
+    const complete = e.target.closest('[data-complete-emergency]');
+    if (complete) {
+      const result = updateEmergencyCase({ requestId: complete.dataset.completeEmergency, status: 'Completed', actor: ctxRef.session });
+      if (!result.ok) toast(result.message, 'danger');
+      else toast('Emergency case completed.', 'success');
+      ctxRef.refresh();
+    }
+  });
 
   $('#dayAppointments').addEventListener('click', async (e) => {
+    const start = e.target.closest('[data-start]');
+    if (start) {
+      const result = startConsultation({ appointmentId: start.dataset.start, actor: ctxRef.session });
+      if (!result.ok) toast(result.message, 'danger');
+      else toast('Consultation started.', 'success');
+      ctxRef.refresh();
+      return;
+    }
     const btn = e.target.closest('[data-complete]');
     if (!btn) return;
     const res = completeAppointment({ appointmentId: btn.dataset.complete, actor: ctxRef.session });
@@ -171,7 +252,7 @@ function bindEvents() {
     const alertBox = $('#slotAlert');
     alertBox.innerHTML = '';
     const errors = validateSlotInput({ date, startTime, duration });
-    if (!errors.duration && startTime && timeToMinutes(startTime) + duration * count > 24 * 60) errors.duration = 'These slots would run past midnight. Use fewer slots or an earlier time.';
+    if (!errors.duration && startTime && timeToMinutes(startTime) + duration * count >= 24 * 60) errors.duration = 'These slots would run past midnight. Use fewer slots or an earlier time.';
     if (hasErrors(errors)) { showFieldErrors(form, errors); shake(form); return; }
     clearFieldErrors(form);
 
@@ -202,6 +283,7 @@ initPage({
     ctxRef = ctx;
     if (!isRefresh) { bindEvents(); $('#slotDate').value = state.date; $('#slotDate').min = toISODate(new Date()); }
     renderHeader();
+    renderAppointmentViewButtons();
     renderAll(!isRefresh);
   },
 });

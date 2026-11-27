@@ -4,6 +4,9 @@
   "description": "ClinicBook \u2013 clinic appointment booking demo (HTML, CSS, Bootstrap 5, JavaScript, GSAP)",
   "type": "module",
   "private": true,
+  "dependencies": {
+    "qrcode-generator": "^2.0.4"
+  },
   "scripts": {
     "start": "node serve.mjs",
     "test": "node --test tests/"

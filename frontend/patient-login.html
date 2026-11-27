@@ -52,18 +52,23 @@
             <div class="role-icon mb-3"><i class="bi bi-person-heart" aria-hidden="true"></i></div>
             <div class="eyebrow mb-1">Patient login</div>
             <h1 class="h2 mb-2">Welcome back</h1>
-            <p class="text-muted mb-4">Sign in with the phone number you registered at the clinic.</p>
+            <p class="text-muted mb-4">Sign in with your 10-digit Indian mobile number or registered email.</p>
 
             <form id="loginForm" novalidate>
-              <label class="form-label" for="identifier">Phone number</label>
+              <label class="form-label" for="identifier">Mobile number or email</label>
               <div class="input-group has-validation mb-1">
                 <span class="input-group-text"><i class="bi bi-telephone" aria-hidden="true"></i></span>
-                <input type="tel" class="form-control" id="identifier" name="identifier" inputmode="tel" autocomplete="off" placeholder="555-010-2001" aria-describedby="identifier-help identifier-error" required>
+                <input type="text" class="form-control" id="identifier" name="identifier" autocomplete="username" placeholder="9876501001 or name@example.in" aria-describedby="identifier-help identifier-error" required>
                 <div class="invalid-feedback" id="identifier-error"></div>
               </div>
-              <div class="form-text mb-4" id="identifier-help"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Demo login — no password needed.</div>
+              <div class="form-text mb-4" id="identifier-help"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Use exactly 10 mobile digits or your registered email. Demo login — no password needed.</div>
               <button type="submit" class="btn btn-primary btn-lg w-100" id="loginBtn"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>Sign in as Patient</button>
             </form>
+
+            <div class="text-center mt-3">
+              <span class="small text-muted">New to the clinic?</span>
+              <a class="fw-semibold" href="patient-register.html">New Patient? Register Here</a>
+            </div>
 
             <div class="auth-divider"><span>or pick a demo patient</span></div>
             <div class="row row-cols-1 row-cols-sm-2 g-2" id="demoAccounts"></div>

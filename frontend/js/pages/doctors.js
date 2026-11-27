@@ -3,8 +3,7 @@ import { initPage, $, escapeHtml, avatar, emptyState } from '../ui/common.js';
 import { nextAvailableSlot, countAvailable } from '../logic/slotService.js';
 import { toISODate, formatDate, formatTime } from '../logic/dateUtils.js';
 import { staggerIn } from '../ui/motion.js';
-import { ratingInline } from '../ui/components.js';
-import { doctorRating } from '../logic/reviewService.js';
+import { doctorProfileHref, matchesSpecialty } from '../logic/doctorDirectory.js';
 
 const state = { q: '', specialty: 'All', availableToday: false, hideLeave: false, sort: 'name' };
 let ctxRef;
@@ -12,14 +11,13 @@ let ctxRef;
 const byName = (a, b) => a.name.replace(/^Dr\.\s*/, '').localeCompare(b.name.replace(/^Dr\.\s*/, ''));
 const SORTS = {
   name: byName,
-  // Highest average first; more reviews breaks ties; unrated doctors last.
-  rating: (a, b) => (b.rating.average ?? -1) - (a.rating.average ?? -1) || b.rating.count - a.rating.count || byName(a, b),
   soonest: (a, b) => (a.next ? `${a.next.date}${a.next.startTime}` : '~').localeCompare(b.next ? `${b.next.date}${b.next.startTime}` : '~') || byName(a, b),
 };
 
 
 function renderPills(data) {
   const specs = ['All', ...new Set(data.doctors.map((d) => d.specialty))];
+  $('#specialtySuggestions').innerHTML = specs.slice(1).map((specialty) => `<option value="${escapeHtml(specialty)}"></option>`).join('');
   $('#specialtyPills').innerHTML = specs.map((s) => `<button type="button" class="pill" data-spec="${escapeHtml(s)}" aria-pressed="${s === state.specialty}">${escapeHtml(s)}</button>`).join('');
 }
 
@@ -29,7 +27,15 @@ function bindFilters() {
     const b = e.target.closest('[data-spec]');
     if (!b) return;
     state.specialty = b.dataset.spec;
+    $('#specialtySearch').value = state.specialty === 'All' ? '' : state.specialty;
     document.querySelectorAll('#specialtyPills .pill').forEach((p) => p.setAttribute('aria-pressed', String(p === b)));
+    renderGrid(true);
+  });
+  $('#specialtySearch').addEventListener('input', (e) => {
+    state.specialty = e.target.value.trim() || 'All';
+    document.querySelectorAll('#specialtyPills .pill').forEach((pill) =>
+      pill.setAttribute('aria-pressed', String(pill.dataset.spec === state.specialty)),
+    );
     renderGrid(true);
   });
   $('#availableToday').addEventListener('change', (e) => { state.availableToday = e.target.checked; renderGrid(true); });
@@ -42,8 +48,8 @@ function renderGrid(animate) {
   const now = new Date();
   const today = toISODate(now);
   const docs = data.doctors
-    .map((d) => ({ ...d, next: nextAvailableSlot(data, d.doctorId, now), today: countAvailable(data, { doctorId: d.doctorId, date: today }, now), rating: doctorRating(data, d.doctorId) }))
-    .filter((d) => state.specialty === 'All' || d.specialty === state.specialty)
+    .map((d) => ({ ...d, next: nextAvailableSlot(data, d.doctorId, now), today: countAvailable(data, { doctorId: d.doctorId, date: today }, now) }))
+    .filter((d) => state.specialty === 'All' || matchesSpecialty(d, state.specialty))
     .filter((d) => !state.q || `${d.name} ${d.specialty}`.toLowerCase().includes(state.q))
     .filter((d) => !state.availableToday || d.today > 0)
     .filter((d) => !state.hideLeave || d.status === 'active')
@@ -59,7 +65,7 @@ function renderGrid(animate) {
     })}</div></div>`;
     $('#resetFilters').addEventListener('click', () => {
       Object.assign(state, { q: '', specialty: 'All', availableToday: false, hideLeave: false, sort: 'name' }); $('#sortBy').value = 'name';
-      $('#search').value = ''; $('#availableToday').checked = false; $('#hideLeave').checked = false;
+      $('#search').value = ''; $('#specialtySearch').value = ''; $('#availableToday').checked = false; $('#hideLeave').checked = false;
       renderPills(data); renderGrid(true);
     });
     return;
@@ -71,13 +77,13 @@ function renderGrid(animate) {
       ? `<i class="bi bi-lightning-charge-fill text-turq" aria-hidden="true"></i> Next: <strong>${d.next.date === today ? 'Today' : formatDate(d.next.date)}, ${formatTime(d.next.startTime)}</strong>`
       : '<i class="bi bi-calendar-x" aria-hidden="true"></i> No open slots';
     return `<div class="col">
+      <a class="doctor-card-link text-reset text-decoration-none" href="${doctorProfileHref(d.doctorId)}" aria-label="View profile and slots for ${escapeHtml(d.name)}">
       <article class="card card-hover h-100 p-4 doctor-card" aria-labelledby="doc-${d.doctorId}">
         <div class="d-flex align-items-start gap-3 mb-3">
           ${avatar(d)}
           <div class="min-w-0 flex-grow-1">
             <h3 class="h6 mb-1" id="doc-${d.doctorId}">${escapeHtml(d.name)}</h3>
             <div class="small fw-semibold text-turq">${escapeHtml(d.specialty)}</div>
-            <div class="mt-1">${ratingInline(d.rating)}</div>
           </div>
         </div>
         <p class="small text-muted text-truncate-2 mb-3">${escapeHtml(d.bio)}</p>
@@ -91,11 +97,11 @@ function renderGrid(animate) {
         <p class="small mb-3">${onLeave ? '<i class="bi bi-info-circle" aria-hidden="true"></i> Not accepting bookings right now' : nextTxt}</p>
         <div class="mt-auto d-flex gap-2">
           ${onLeave
-            ? '<button class="btn btn-light border w-100" disabled aria-disabled="true"><i class="bi bi-slash-circle" aria-hidden="true"></i>Unavailable</button>'
-            : `<a class="btn btn-primary flex-grow-1" href="book.html?doctor=${d.doctorId}"><i class="bi bi-calendar2-week" aria-hidden="true"></i>View slots</a>
-               ${d.next ? `<a class="btn btn-soft" href="book.html?doctor=${d.doctorId}&date=${d.next.date}" aria-label="Jump to next available slot for ${escapeHtml(d.name)}" title="Next available"><i class="bi bi-skip-forward-fill" aria-hidden="true"></i></a>` : ''}`}
+            ? '<span class="btn btn-light border w-100"><i class="bi bi-slash-circle" aria-hidden="true"></i>Profile · on leave</span>'
+            : '<span class="btn btn-primary flex-grow-1"><i class="bi bi-calendar2-week" aria-hidden="true"></i>View slots</span>'}
         </div>
       </article>
+      </a>
     </div>`;
   }).join('');
   if (animate) staggerIn('#doctorGrid .doctor-card', { stagger: 0.07 });

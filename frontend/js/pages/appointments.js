@@ -1,15 +1,13 @@
-// Patient: My Appointments — upcoming, past and cancelled, with cancel and reviews.
-import { initPage, $, $$, escapeHtml, statusBadge, dateBlock, timeRange, emptyState, toast, confirmDialog, showFieldErrors, clearFieldErrors } from '../ui/common.js';
-import { starsHtml, RATING_WORDS } from '../ui/components.js';
-import { addReview, updateReview, deleteReview, reviewForAppointment, visitsAwaitingReview } from '../logic/reviewService.js';
-import { validateReview, hasErrors } from '../logic/validators.js';
+// Patient: appointments, cancellation history, emergency request status, clinical records.
+import { initPage, $, $$, escapeHtml, statusBadge, dateBlock, timeRange, emptyState, toast, confirmDialog } from '../ui/common.js';
 import { cancelAppointment, classifyAppointments } from '../logic/bookingService.js';
+import { patientClinicalRecords } from '../logic/consultationService.js';
+import { listEmergencyRequests } from '../logic/emergencyService.js';
 import { formatLongDate, formatDate, formatTime } from '../logic/dateUtils.js';
-import { staggerIn, leave, countUp, shake, canAnimate } from '../ui/motion.js';
+import { staggerIn, leave, countUp } from '../ui/motion.js';
 
-const state = { tab: 'upcoming', reviewAppointmentId: null };
+const state = { tab: 'upcoming' };
 let ctxRef;
-let reviewModal;
 
 
 function lists() {
@@ -27,12 +25,13 @@ function render(animate) {
     ? `<i class="bi bi-bell text-turq me-1" aria-hidden="true"></i>Next visit: <strong>${formatDate(next.date)} at ${formatTime(next.startTime)}</strong> with ${escapeHtml(doctorOf(next).name)}`
     : 'You have no upcoming visits.';
 
-  renderReviewPrompt(animate);
+  renderEmergencyRequests();
 
   const tabs = [
     { id: 'upcoming', label: 'Upcoming', icon: 'bi-calendar2-week', n: upcoming.length },
     { id: 'past', label: 'Past', icon: 'bi-clock-history', n: past.length },
     { id: 'cancelled', label: 'Cancelled', icon: 'bi-x-circle', n: cancelled.length },
+    { id: 'records', label: 'Clinical records', icon: 'bi-file-medical', n: patientRecords().length },
   ];
   $('#apptTabs').innerHTML = tabs.map((t) => `<li class="nav-item" role="presentation">
     <button class="btn ${t.id === state.tab ? 'btn-primary' : 'btn-soft'}" role="tab" aria-selected="${t.id === state.tab}" data-tab="${t.id}">
@@ -41,6 +40,10 @@ function render(animate) {
 
   const items = { upcoming, past, cancelled }[state.tab];
   const host = $('#apptList');
+  if (state.tab === 'records') {
+    renderPatientRecords(animate);
+    return;
+  }
   if (!items.length) {
     const msg = {
       upcoming: { icon: 'bi-calendar2-plus', title: 'No upcoming appointments', text: 'Find a doctor and pick a time that works for you.', action: '<a class="btn btn-primary" href="doctors.html"><i class="bi bi-search-heart" aria-hidden="true"></i>Find a doctor</a>' },
@@ -61,23 +64,18 @@ function card(a) {
   const doc = doctorOf(a);
   const canCancel = state.tab === 'upcoming' && a.status === 'Booked';
   const displayStatus = a.status;
-  const review = a.status === 'Completed' ? reviewForAppointment(ctxRef.data, a.appointmentId) : null;
   return `<article class="card appt-card ${a.status === 'Cancelled' ? 'is-cancelled' : ''}" data-id="${a.appointmentId}" aria-label="${escapeHtml(doc.name)}, ${formatLongDate(a.date)}">
     ${dateBlock(a.date)}
     <div class="flex-grow-1 min-w-0">
       <div class="d-flex flex-wrap justify-content-between gap-2 mb-1">
         <h3 class="h6 mb-0">${escapeHtml(doc.name)} <span class="text-muted fw-normal small">· ${escapeHtml(doc.specialty)}</span></h3>
-        ${statusBadge(displayStatus)}
+        <span>${a.isEmergency ? '<span class="badge text-bg-danger me-1">EMERGENCY</span>' : ''}${statusBadge(displayStatus)}</span>
       </div>
       <div class="small fw-semibold mb-1"><i class="bi bi-clock text-turq me-1" aria-hidden="true"></i>${timeRange(a)} <span class="text-muted fw-normal ms-2"><i class="bi bi-door-open me-1" aria-hidden="true"></i>${escapeHtml(doc.room || '')}</span></div>
       <p class="small text-muted mb-2 text-truncate-2"><i class="bi bi-chat-left-text me-1" aria-hidden="true"></i>${escapeHtml(a.reason)}</p>
-      ${review ? `<div class="review-snippet"><div class="d-flex align-items-center gap-2">${starsHtml(review.rating, { cls: 'stars-sm' })}<span class="small fw-bold">${RATING_WORDS[review.rating]}</span><span class="small text-muted">· your review</span></div>
-        ${review.comment ? `<p class="small mb-0 mt-1 text-truncate-2">“${escapeHtml(review.comment)}”</p>` : ''}</div>` : ''}
       <div class="d-flex flex-wrap gap-2">
         ${canCancel ? `<button class="btn btn-sm btn-outline-danger" data-cancel="${a.appointmentId}"><i class="bi bi-x-circle" aria-hidden="true"></i>Cancel</button>` : ''}
         ${state.tab !== 'upcoming' ? `<a class="btn btn-sm btn-soft" href="book.html?doctor=${a.doctorId}"><i class="bi bi-arrow-repeat" aria-hidden="true"></i>Book again</a>` : ''}
-        ${a.status === 'Completed' && !review ? `<button class="btn btn-sm btn-primary" data-review="${a.appointmentId}"><i class="bi bi-star" aria-hidden="true"></i>Rate this visit</button>` : ''}
-        ${review ? `<button class="btn btn-sm btn-outline-primary" data-review="${a.appointmentId}"><i class="bi bi-pencil" aria-hidden="true"></i>Edit review</button>` : ''}
         ${a.status === 'Booked' && state.tab === 'past' ? '<span class="small text-muted align-self-center">Awaiting doctor’s confirmation</span>' : ''}
       </div>
     </div>
@@ -91,11 +89,6 @@ function bindEvents() {
     state.tab = t.dataset.tab;
     render(true);
   });
-  $('#main').addEventListener('click', (e) => {
-    const r = e.target.closest('[data-review]');
-    if (r) openReview(r.dataset.review);
-  });
-  bindReviewModal();
   $('#apptList').addEventListener('click', async (e) => {
     const btn = e.target.closest('[data-cancel]');
     if (!btn) return;
@@ -114,131 +107,67 @@ function bindEvents() {
   });
 }
 
-/* ---------------- reviews ---------------- */
-function renderReviewPrompt(animate) {
-  const host = $('#reviewPrompt');
-  const pending = visitsAwaitingReview(ctxRef.data, ctxRef.session.patientId);
-  if (!pending.length) { host.innerHTML = ''; return; }
-  const a = pending[0];
-  host.innerHTML = `<div class="review-prompt d-flex flex-wrap align-items-center gap-3 mb-4">
-    <span class="prompt-icon"><i class="bi bi-star-half" aria-hidden="true"></i></span>
-    <div class="flex-grow-1 min-w-0">
-      <div class="fw-bold">How was your visit with ${escapeHtml(doctorOf(a).name)}?</div>
-      <div class="small text-muted">${formatDate(a.date)} · ${escapeHtml(a.reason)}${pending.length > 1 ? ` · ${pending.length - 1} more visit${pending.length > 2 ? 's' : ''} to review` : ''}</div>
-    </div>
-    <button class="btn btn-primary" data-review="${a.appointmentId}"><i class="bi bi-star" aria-hidden="true"></i>Rate this visit</button>
-  </div>`;
-  if (animate && canAnimate()) {
-    window.gsap.fromTo('#reviewPrompt .review-prompt', { y: -12, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.5, delay: 0.3, ease: 'back.out(1.6)', clearProps: 'transform,opacity,visibility' });
-    window.gsap.fromTo('#reviewPrompt .prompt-icon', { rotate: -25, scale: 0.6 }, { rotate: 0, scale: 1, duration: 0.7, delay: 0.5, ease: 'elastic.out(1, 0.5)', clearProps: 'transform' });
+function patientRecords() {
+  const result = patientClinicalRecords(ctxRef.data, ctxRef.session.patientId, ctxRef.session);
+  return result.ok ? result.records : [];
+}
+
+function renderPatientRecords(animate) {
+  const records = patientRecords();
+  const host = $('#apptList');
+  if (!records.length) {
+    host.innerHTML = `<div class="card">${emptyState({ icon: 'bi-file-medical', title: 'No completed clinical records', text: 'Completed consultation notes and prescriptions will appear here when available.' })}</div>`;
+    return;
   }
+  host.innerHTML = `<div class="d-grid gap-3">${records.map(({ appointment, encounter, consultation, prescriptions, doctor }) => {
+    const visitDate = appointment?.date || String(consultation.createdAt).slice(0, 10);
+    const visitDetail = appointment?.reason || encounter?.reason || consultation.chiefComplaint || consultation.encounterType || 'Clinic visit';
+    return `<article class="card p-3 appt-card">
+      ${dateBlock(visitDate)}
+      <div class="flex-grow-1 min-w-0">
+        <h3 class="h6">${escapeHtml(doctor?.name || 'Doctor')} · ${formatLongDate(visitDate)}</h3>
+        <p class="small text-muted">${escapeHtml(visitDetail)}</p>
+        <h4 class="h6">Consultation notes</h4>
+        <p class="mb-3">${escapeHtml(consultation?.notes || 'No notes were recorded for this visit.')}</p>
+        <h4 class="h6">Prescriptions</h4>
+        ${prescriptions.length ? `<ul class="mb-0">${prescriptions.map((medicine) => `<li><strong>${escapeHtml(medicine.medicineName)}</strong> — ${escapeHtml(medicine.dosage)}, ${escapeHtml(medicine.frequency)}, ${escapeHtml(medicine.duration)}. ${escapeHtml(medicine.instructions)}</li>`).join('')}</ul>` : '<p class="small text-muted mb-0">No medicines prescribed.</p>'}
+      </div>
+    </article>`;
+  }).join('')}</div>`;
+  if (animate) staggerIn('#apptList .appt-card');
 }
 
-function currentRating() {
-  return Number($('#reviewForm input[name="rating"]:checked')?.value || 0);
-}
-
-function paintStars(n, { bounce = false } = {}) {
-  $$('#starInput .star-label').forEach((label) => label.classList.toggle('on', Number(label.dataset.star) <= n));
-  $('#ratingWord').textContent = n ? RATING_WORDS[n] : 'Tap a star to rate';
-  if (bounce && canAnimate() && n) {
-    window.gsap.fromTo($$('#starInput .star-label.on'), { scale: 0.6, rotate: -15 }, { scale: 1, rotate: 0, duration: 0.45, stagger: 0.05, ease: 'back.out(3)', clearProps: 'transform' });
-  }
-}
-
-function openReview(appointmentId) {
-  const data = ctxRef.data;
-  const a = data.appointments.find((x) => x.appointmentId === appointmentId);
-  if (!a) return;
-  const existing = reviewForAppointment(data, appointmentId);
-  state.reviewAppointmentId = appointmentId;
-  const form = $('#reviewForm');
-  form.reset();
-  clearFieldErrors(form);
-  $('#starInput').classList.remove('is-invalid');
-  $('#rating-error').textContent = '';
-  $('#reviewAlert').innerHTML = '';
-  const doc = doctorOf(a);
-  $('#reviewModalLabel').textContent = existing ? 'Edit your review' : 'Rate your visit';
-  $('#reviewSummary').innerHTML = `
-    <div class="summary-row"><i class="bi bi-person-badge" aria-hidden="true"></i><span>${escapeHtml(doc.name)} <span class="text-muted fw-normal">· ${escapeHtml(doc.specialty)}</span></span></div>
-    <div class="summary-row"><i class="bi bi-calendar3" aria-hidden="true"></i><span>${formatLongDate(a.date)}, ${formatTime(a.startTime)}</span></div>
-    <div class="summary-row"><i class="bi bi-chat-left-text" aria-hidden="true"></i><span class="fw-normal">${escapeHtml(a.reason)}</span></div>`;
-  if (existing) {
-    $(`#star${existing.rating}`).checked = true;
-    $('#comment').value = existing.comment;
-  }
-  $('#commentCount').textContent = `${$('#comment').value.length}/300`;
-  $('#deleteReviewBtn').classList.toggle('d-none', !existing);
-  $('#submitReviewBtn').innerHTML = existing
-    ? '<i class="bi bi-check2" aria-hidden="true"></i>Save changes'
-    : '<i class="bi bi-send" aria-hidden="true"></i>Post review';
-  paintStars(existing?.rating || 0);
-  reviewModal.show();
-}
-
-function bindReviewModal() {
-  reviewModal = new window.bootstrap.Modal($('#reviewModal'));
-  const input = $('#starInput');
-  input.addEventListener('mouseover', (e) => { const l = e.target.closest('[data-star]'); if (l) paintStars(Number(l.dataset.star)); });
-  input.addEventListener('mouseleave', () => paintStars(currentRating()));
-  input.addEventListener('change', () => {
-    input.classList.remove('is-invalid');
-    $('#rating-error').textContent = '';
-    paintStars(currentRating(), { bounce: true });
-  });
-  $('#comment').addEventListener('input', (e) => { $('#commentCount').textContent = `${e.target.value.length}/300`; });
-  $('#reviewModal').addEventListener('shown.bs.modal', () => ($('#reviewForm input[name="rating"]:checked') || $('#star5')).focus());
-
-  $('#reviewForm').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const rating = currentRating();
-    const comment = $('#comment').value;
-    const errors = validateReview({ rating, comment });
-    if (hasErrors(errors)) {
-      input.classList.toggle('is-invalid', Boolean(errors.rating));
-      $('#rating-error').textContent = errors.rating || '';
-      showFieldErrors(form, errors.comment ? { comment: errors.comment } : {});
-      if (errors.rating) $('#star5').focus();
-      shake($('#reviewModal .modal-dialog'));
-      return;
-    }
-    const existing = reviewForAppointment(ctxRef.data, state.reviewAppointmentId);
-    const res = existing
-      ? updateReview({ reviewId: existing.reviewId, rating, comment, actor: ctxRef.session })
-      : addReview({ appointmentId: state.reviewAppointmentId, rating, comment, actor: ctxRef.session });
-    if (!res.ok) {
-      $('#reviewAlert').innerHTML = `<div class="alert alert-danger rounded-4 mb-0" role="alert"><i class="bi bi-exclamation-octagon me-1" aria-hidden="true"></i>${escapeHtml(res.message)}</div>`;
-      shake($('#reviewModal .modal-dialog'));
-      ctxRef.refresh();
-      return;
-    }
-    reviewModal.hide();
-    toast(existing ? 'Your review was updated.' : `Thanks! Your ${rating}-star review was posted.`);
-    if (state.tab !== 'past') state.tab = 'past';
-    ctxRef.refresh();
-    const cardEl = $(`.appt-card[data-id="${state.reviewAppointmentId}"] .review-snippet`);
-    if (cardEl && canAnimate()) window.gsap.fromTo(cardEl, { scale: 0.92, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.5, ease: 'back.out(2)', clearProps: 'transform,opacity,visibility' });
-  });
-
-  $('#deleteReviewBtn').addEventListener('click', () => {
-    const existing = reviewForAppointment(ctxRef.data, state.reviewAppointmentId);
-    if (!existing) return;
-    $('#reviewModal').addEventListener('hidden.bs.modal', async () => {
-      const ok = await confirmDialog({
-        title: 'Delete your review?',
-        body: 'Your rating and comment will be removed from this doctor’s profile. You can write a new review later.',
-        confirmText: 'Delete review', cancelText: 'Keep it', icon: 'bi-trash3',
-      });
-      if (!ok) return;
-      const res = deleteReview({ reviewId: existing.reviewId, actor: ctxRef.session });
-      if (!res.ok) { toast(res.message, 'danger'); ctxRef.refresh(); return; }
-      toast('Review deleted.');
-      ctxRef.refresh();
-    }, { once: true });
-    reviewModal.hide();
-  });
+function renderEmergencyRequests() {
+  const requests = listEmergencyRequests(ctxRef.data, { patientId: ctxRef.session.patientId });
+  $('#emergencyRequestHistory').innerHTML = requests.length
+    ? requests.map((request) => {
+      const appointment = ctxRef.data.appointments.find((entry) =>
+        entry.appointmentId === request.appointmentId || entry.emergencyRequestId === request.requestId,
+      );
+      const slot = ctxRef.data.slots.find((entry) => entry.slotId === (appointment?.slotId || request.slotId));
+      const doctor = doctorOf({ doctorId: request.doctorId });
+      const date = appointment?.date || slot?.date;
+      const start = appointment?.startTime || slot?.emergencyBufferStartTime || slot?.consultationEndTime;
+      const end = appointment?.endTime || slot?.emergencyBufferEndTime || slot?.endTime;
+      const message = request.status === 'pending_approval'
+        ? 'Your emergency request has been submitted. It is waiting for receptionist approval. Your appointment is not confirmed yet.'
+        : ['Approved', 'In Progress', 'Completed'].includes(request.status)
+          ? 'Your emergency appointment has been approved and confirmed successfully!'
+          : request.status === 'rejected'
+            ? 'Your emergency appointment request was not approved. Please contact reception for assistance.'
+            : request.legacyDecision
+              ? 'This is a legacy emergency request from an earlier version of ClinicBook.'
+              : `Emergency request status: ${request.status}.`;
+      return `<div class="border rounded-4 p-3 mb-2">
+        <div class="d-flex flex-wrap justify-content-between gap-2">
+          <strong>${escapeHtml(doctor.name)}</strong>${statusBadge(request.status)}
+        </div>
+        ${date && start && end ? `<div class="small mt-1">${formatLongDate(date)} · ${formatTime(start)}–${formatTime(end)}</div>` : ''}
+        <div class="small text-muted mt-1">${escapeHtml(request.reason)}</div>
+        <p class="mb-0 mt-2">${escapeHtml(message)}</p>
+      </div>`;
+    }).join('')
+    : '<p class="small text-muted mb-0">No emergency requests.</p>';
 }
 
 initPage({

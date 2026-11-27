@@ -6,7 +6,12 @@ export function getSession() {
   try { return JSON.parse(sessionStorage.getItem(KEY)) || null; } catch { return null; }
 }
 export function setSession(session) {
-  try { sessionStorage.setItem(KEY, JSON.stringify(session)); } catch { /* ignore */ }
+  try {
+    sessionStorage.setItem(KEY, JSON.stringify(session));
+    return true;
+  } catch {
+    return false;
+  }
 }
 export function updateSession(patch) {
   const s = getSession();

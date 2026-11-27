@@ -1,6 +1,6 @@
 // Patient login and Doctor login pages share this script. The page's role comes
-// from <body data-login-role="patient|doctor">.
-import { initPage, $, escapeHtml, avatar, showFieldErrors, clearFieldErrors, sessionPerson } from '../ui/common.js';
+// from <body data-login-role="patient|doctor|receptionist">.
+import { initPage, $, $$, escapeHtml, avatar, showFieldErrors, clearFieldErrors, sessionPerson } from '../ui/common.js';
 import { setSession, getSession } from '../ui/session.js';
 import { HOME_PAGE, ROLE_LABELS } from '../logic/roleGuard.js';
 import { loginPatient, loginDoctor, loginReceptionist } from '../logic/authService.js';
@@ -8,6 +8,8 @@ import { canAnimate, shake, popIn } from '../ui/motion.js';
 
 const role = ['patient', 'doctor', 'receptionist'].includes(document.body.dataset.loginRole) ? document.body.dataset.loginRole : 'patient';
 let ctxRef;
+let submitting = false;
+let loginButtonMarkup = '';
 
 function renderContinue() {
   const session = getSession();
@@ -34,24 +36,40 @@ function renderDemoAccounts(animate) {
 }
 
 function signIn(identifier) {
+  if (submitting) return;
   const form = $('#loginForm');
-  const res = role === 'patient' ? loginPatient(ctxRef.data, identifier) : role === 'doctor' ? loginDoctor(ctxRef.data, identifier) : loginReceptionist(ctxRef.data, identifier);
-  if (!res.ok) {
-    showFieldErrors(form, { identifier: res.message });
-    shake($('#authCard'));
-    return;
-  }
-  clearFieldErrors(form);
-  setSession(res.session);
   const btn = $('#loginBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span>Signing in…';
-  const go = () => { window.location.href = HOME_PAGE[role]; };
-  if (!canAnimate()) return go();
-  setTimeout(go, 1200); // fallback if animation frames are throttled
-  window.gsap.timeline({ onComplete: go })
-    .to('#authCard', { scale: 1.02, boxShadow: '0 30px 70px -24px rgba(11,128,118,.55)', duration: 0.25, ease: 'back.out(2)' })
-    .to('main', { autoAlpha: 0, y: -14, duration: 0.3, ease: 'power2.in' }, '+=0.1');
+  submitting = true;
+
+  try {
+    form.setAttribute('aria-busy', 'true');
+    btn.disabled = true;
+    btn.setAttribute('aria-busy', 'true');
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span>Signing in…';
+    $('#identifier').disabled = true;
+    $$('#demoAccounts [data-identifier]').forEach((account) => { account.disabled = true; });
+
+    const res = role === 'patient' ? loginPatient(ctxRef.data, identifier) : role === 'doctor' ? loginDoctor(ctxRef.data, identifier) : loginReceptionist(ctxRef.data, identifier);
+    if (!res.ok) {
+      showFieldErrors(form, { identifier: res.message });
+      shake($('#authCard'));
+      return;
+    }
+    clearFieldErrors(form);
+    if (!setSession(res.session)) {
+      showFieldErrors(form, { identifier: 'Your sign-in session could not be saved. Check browser storage and try again.' });
+      return;
+    }
+    window.location.href = HOME_PAGE[role];
+  } finally {
+    submitting = false;
+    form.removeAttribute('aria-busy');
+    btn.disabled = false;
+    btn.removeAttribute('aria-busy');
+    btn.innerHTML = loginButtonMarkup;
+    $('#identifier').disabled = false;
+    $$('#demoAccounts [data-identifier]').forEach((account) => { account.disabled = false; });
+  }
 }
 
 function bindEvents() {
@@ -82,6 +100,7 @@ initPage({
   page: `${role}-login`,
   render(ctx, { isRefresh }) {
     ctxRef = ctx;
+    loginButtonMarkup = $('#loginBtn').innerHTML;
     renderContinue();
     renderDemoAccounts(!isRefresh);
     if (!isRefresh) { bindEvents(); animateIn(); }
