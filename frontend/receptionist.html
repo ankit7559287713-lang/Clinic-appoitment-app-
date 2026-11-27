@@ -1,13 +1,170 @@
-<!doctype html><html lang="en" data-bs-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Appointments Desk · ClinicBook</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"><link rel="stylesheet" href="css/styles.css"></head><body>
-<a class="skip-link" href="#main">Skip to content</a><div class="page-loader" id="pageLoader" aria-hidden="true"><div class="loader-mark">Loading…</div></div><div id="app-nav"></div><main id="main">
-<section class="page-hero"><div class="container"><div class="eyebrow mb-1">Receptionist workspace</div><h1 class="mb-2">Appointments desk</h1><p class="text-muted mb-0">Manage bookings and track cancellations for every registered patient.</p></div></section>
-<div class="container py-4 py-lg-5"><div class="row g-3 mb-4" id="deskStats"></div><div class="row g-4"><section class="col-lg-5"><div class="card p-3 p-lg-4"><h2 class="h5 mb-3">Book for a patient</h2><form id="deskBookingForm" novalidate>
-<div class="mb-3"><label class="form-label" for="patientId">Patient</label><select class="form-select" id="patientId" required><option value="">Select patient</option></select></div>
-<div class="mb-3"><label class="form-label" for="doctorId">Doctor</label><select class="form-select" id="doctorId" required><option value="">Select doctor</option></select></div>
-<div class="mb-3"><label class="form-label" for="appointmentDate">Date</label><input class="form-control" type="date" id="appointmentDate" required></div>
-<div class="mb-3"><label class="form-label" for="slotId">Available slot</label><select class="form-select" id="slotId" required><option value="">Select date and doctor first</option></select></div>
-<div class="mb-3"><label class="form-label" for="reason">Reason for visit</label><textarea class="form-control" id="reason" rows="2" maxlength="240" required></textarea></div><div id="bookingAlert" aria-live="polite"></div><button class="btn btn-primary w-100" type="submit">Confirm appointment</button></form></div></section>
-<section class="col-lg-7"><div class="card p-3 p-lg-4"><div class="d-flex flex-wrap justify-content-between gap-2 mb-3"><h2 class="h5 mb-0">All appointments</h2><input id="appointmentSearch" class="form-control" style="max-width:260px" type="search" placeholder="Search patient or doctor" aria-label="Search appointments"></div>
-<div class="d-flex flex-wrap gap-2 mb-3" id="statusFilters"><button class="btn btn-sm btn-primary" data-filter="All">All</button><button class="btn btn-sm btn-soft" data-filter="Booked">Booked</button><button class="btn btn-sm btn-soft" data-filter="Cancelled">Cancelled</button><button class="btn btn-sm btn-soft" data-filter="Completed">Completed</button></div><div id="appointmentRegister" aria-live="polite"></div></div></section></div></div></main><div id="app-footer"></div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script><script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script><script type="module" src="js/pages/receptionist.js"></script></body></html>
+<!doctype html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Receptionist Desk · ClinicBook</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="page-loader" id="pageLoader" aria-hidden="true"><div class="loader-mark">Loading…</div></div>
+  <div id="app-nav"></div>
+  <main id="main">
+    <section class="page-hero">
+      <div class="container">
+        <div class="eyebrow mb-1">Receptionist workspace</div>
+        <h1 class="mb-2">Clinic desk</h1>
+        <p class="text-muted mb-0">Scheduled visits, walk-in queue, and emergency requests are tracked separately in this browser.</p>
+      </div>
+    </section>
+    <div class="container py-4 py-lg-5">
+      <div class="row g-3 mb-4" id="deskStats"></div>
+
+      <section class="card p-3 p-lg-4 mb-4" aria-labelledby="emergencyTitle">
+        <h2 class="h5 mb-3" id="emergencyTitle"><i class="bi bi-exclamation-triangle text-danger me-2" aria-hidden="true"></i>Emergency requests</h2>
+        <div id="emergencyAlerts" aria-live="polite"></div>
+      </section>
+
+      <div class="row g-4 mb-4">
+        <section class="col-lg-7" aria-labelledby="walkinTitle">
+          <div class="card p-3 p-lg-4 h-100">
+            <h2 class="h5 mb-3" id="walkinTitle">Walk-in registration</h2>
+            <label class="form-label" for="patientSearch">Search existing patients</label>
+            <input class="form-control mb-2" id="patientSearch" type="search" autocomplete="off" placeholder="Name, mobile, or email">
+            <div class="d-flex flex-wrap gap-2 mb-3" id="patientSearchResults" aria-live="polite"></div>
+            <div id="selectedPatientDetails" class="summary-box mb-3 d-none"></div>
+
+            <div class="row g-2">
+              <div class="col-md-6"><label class="form-label" for="walkinDoctor">Assign doctor (optional)</label><select class="form-select" id="walkinDoctor"><option value="">Not assigned</option></select></div>
+              <div class="col-md-6"><label class="form-label" for="referralDoctor">Referral doctor (optional)</label><select class="form-select" id="referralDoctor"><option value="">No referral</option></select></div>
+            </div>
+            <label class="form-label mt-2" for="referralReason">Referral reason (optional)</label>
+            <input class="form-control mb-3" id="referralReason" maxlength="200">
+            <label class="form-label" for="walkinEmergencySlot">Emergency buffer (only after verifying an emergency)</label>
+            <select class="form-select mb-3" id="walkinEmergencySlot"><option value="">Choose doctor first</option></select>
+            <div id="walkinAlert" aria-live="polite"></div>
+            <div class="d-flex flex-wrap gap-2">
+              <button class="btn btn-primary" type="button" id="addExistingToQueue" disabled>Add selected patient to normal queue</button>
+              <button class="btn btn-outline-danger" type="button" id="assignEmergencyWalkIn" disabled>Verify emergency &amp; assign slot</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="col-lg-5" aria-labelledby="scannerTitle">
+          <div class="card p-3 p-lg-4 h-100">
+            <h2 class="h5 mb-2" id="scannerTitle">Appointment QR check-in</h2>
+            <p class="small text-muted">Check-in is local to this browser. QR payload format: <code>clinicbook:appointment:APPOINTMENT_ID</code>.</p>
+            <div class="border rounded-4 p-3 mb-3 text-center">
+              <h3 class="h6">New walk-in registration</h3>
+              <p class="small text-muted">Scan this clinic QR to complete registration on the patient's phone. They then show the one-time handoff QR to reception.</p>
+              <img id="clinicRegistrationQr" class="img-fluid" alt="Clinic patient registration QR code">
+              <a class="small d-block mt-2" id="clinicRegistrationLink" href="patient-register.html?handoff=1">Open patient registration page</a>
+              <div class="small text-muted mt-2">Phone and clinic LocalStorage do not sync; reception imports the handoff explicitly.</div>
+            </div>
+            <div class="d-flex gap-2 mb-3">
+              <button type="button" class="btn btn-primary" id="startScanner"><i class="bi bi-camera" aria-hidden="true"></i>Start scanner</button>
+              <button type="button" class="btn btn-outline-secondary" id="stopScanner" disabled>Stop scanner</button>
+            </div>
+            <video id="qrVideo" class="w-100 rounded-4 bg-dark d-none" autoplay playsinline aria-label="Camera QR scanner"></video>
+            <div id="scannerStatus" class="small" role="status" aria-live="polite">Camera permission is requested only when you start the scanner.</div>
+            <div class="border-top mt-3 pt-3">
+              <label class="form-label" for="manualHandoffPayload">Manual handoff fallback</label>
+              <textarea class="form-control font-monospace small mb-2" id="manualHandoffPayload" rows="3" placeholder="Paste the ClinicBook handoff text"></textarea>
+              <div class="d-flex flex-wrap gap-2">
+                <button class="btn btn-sm btn-soft" type="button" id="reviewManualHandoff">Review handoff</button>
+                <label class="btn btn-sm btn-light border mb-0" for="handoffFileInput">Import handoff file</label>
+                <input class="visually-hidden" type="file" id="handoffFileInput" accept=".json,application/json">
+              </div>
+              <div id="handoffPreview" class="mt-3" aria-live="polite"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <section class="card p-3 p-lg-4 mb-4" aria-labelledby="queueTitle">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+          <h2 class="h5 mb-0" id="queueTitle">Live waiting queue</h2>
+          <span class="small text-muted">Walk-ins and QR check-ins only</span>
+        </div>
+        <div class="row g-3">
+          <div class="col-lg-4"><h3 class="h6">Walk-in waiting</h3><div id="waitingQueue"></div></div>
+          <div class="col-lg-4"><h3 class="h6">Walk-ins consulting</h3><div id="consultingQueue"></div></div>
+          <div class="col-lg-4"><h3 class="h6">Completed walk-ins</h3><div id="completedQueue"></div></div>
+          <div class="col-lg-4"><h3 class="h6">Verified emergency cases</h3><div id="emergencyQueue"></div></div>
+          <div class="col-lg-4"><h3 class="h6">Scheduled check-ins</h3><div id="scheduledCheckinQueue"></div></div>
+        </div>
+      </section>
+
+      <section class="card p-3 p-lg-4" aria-labelledby="scheduledTitle">
+        <div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
+          <div><h2 class="h5 mb-1" id="scheduledTitle">Scheduled appointments</h2><p class="small text-muted mb-0">Booked visits are separate from walk-in queue entries.</p></div>
+          <input id="appointmentSearch" class="form-control" style="max-width:280px" type="search" placeholder="Search patient or doctor" aria-label="Search appointments">
+        </div>
+        <div class="d-flex flex-wrap gap-2 mb-3" id="statusFilters">
+          <button class="btn btn-sm btn-primary" data-filter="All">All</button>
+          <button class="btn btn-sm btn-soft" data-filter="Booked">Booked</button>
+          <button class="btn btn-sm btn-soft" data-filter="Cancelled">Cancelled</button>
+          <button class="btn btn-sm btn-soft" data-filter="Completed">Completed</button>
+        </div>
+        <h3 class="h6">Upcoming appointments</h3>
+        <div id="upcomingAppointments" class="mb-3"></div>
+        <h3 class="h6">Appointment register</h3>
+        <div id="appointmentRegister" aria-live="polite"></div>
+        <details class="mt-4">
+          <summary class="fw-semibold">Assisted scheduled booking (existing patients)</summary>
+          <form id="deskBookingForm" class="row g-2 mt-2" novalidate>
+            <div class="col-md-6"><label class="form-label" for="patientId">Patient</label><select class="form-select" id="patientId" required><option value="">Select patient</option></select></div>
+            <div class="col-md-6"><label class="form-label" for="doctorId">Doctor</label><select class="form-select" id="doctorId" required><option value="">Select doctor</option></select></div>
+            <div class="col-md-6"><label class="form-label" for="appointmentDate">Date</label><input class="form-control" type="date" id="appointmentDate" required></div>
+            <div class="col-md-6"><label class="form-label" for="slotId">Available 30-minute block</label><select class="form-select" id="slotId" required><option value="">Select date and doctor first</option></select></div>
+            <div class="col-12"><label class="form-label" for="reason">Reason</label><textarea class="form-control" id="reason" rows="2" maxlength="200" required></textarea></div>
+            <div class="col-12" id="bookingAlert" aria-live="polite"></div>
+            <div class="col-12"><button class="btn btn-outline-primary" type="submit">Book scheduled appointment</button></div>
+          </form>
+        </details>
+      </section>
+
+      <details class="card p-3 p-lg-4 mt-4" id="doctorManagement">
+        <summary class="h5 mb-0">Doctor Management</summary>
+        <p class="small text-muted mt-3">Receptionist-only clinic management. Deactivated doctors remain linked to their appointment and clinical history.</p>
+        <div class="row g-4">
+          <section class="col-lg-5" aria-labelledby="doctorFormTitle">
+            <h2 class="h6" id="doctorFormTitle">Add or edit doctor</h2>
+            <form id="doctorForm" novalidate>
+              <div class="mb-2"><label class="form-label" for="doctorStaffId">Staff ID</label><input class="form-control" id="doctorStaffId" name="staffId" placeholder="DOC-321" maxlength="7" required><div class="invalid-feedback" id="staffId-error"></div></div>
+              <div class="mb-2"><label class="form-label" for="doctorName">Full name</label><input class="form-control" id="doctorName" name="name" maxlength="80" required><div class="invalid-feedback" id="name-error"></div></div>
+              <div class="row g-2">
+                <div class="col-md-7"><label class="form-label" for="doctorSpecialty">Specialty</label><input class="form-control" id="doctorSpecialty" name="specialty" maxlength="80" required><div class="invalid-feedback" id="specialty-error"></div></div>
+                <div class="col-md-5"><label class="form-label" for="doctorExperience">Years experience</label><input class="form-control" id="doctorExperience" name="experience" type="number" min="0" max="70" required><div class="invalid-feedback" id="experience-error"></div></div>
+              </div>
+              <div class="row g-2 mt-1">
+                <div class="col-md-6"><label class="form-label" for="doctorRoom">Room</label><input class="form-control" id="doctorRoom" name="room" maxlength="40" required><div class="invalid-feedback" id="room-error"></div></div>
+                <div class="col-md-6"><label class="form-label" for="doctorFee">Consultation fee (optional)</label><input class="form-control" id="doctorFee" name="consultationFee" type="number" min="0" step="1"></div>
+              </div>
+              <div class="mt-2"><label class="form-label" for="doctorQualification">Qualification</label><input class="form-control" id="doctorQualification" name="qualification" maxlength="120" required><div class="invalid-feedback" id="qualification-error"></div></div>
+              <div class="mt-2"><label class="form-label" for="doctorBio">Short bio (optional)</label><textarea class="form-control" id="doctorBio" name="bio" rows="2" maxlength="300"></textarea></div>
+              <div id="doctorFormAlert" class="mt-3" aria-live="polite"></div>
+              <div class="d-flex gap-2 mt-3"><button class="btn btn-primary" type="submit" id="saveDoctor">Add doctor</button><button class="btn btn-light border d-none" type="button" id="cancelDoctorEdit">Cancel edit</button></div>
+            </form>
+          </section>
+          <section class="col-lg-7" aria-labelledby="doctorListTitle">
+            <h2 class="h6" id="doctorListTitle">Clinic doctors</h2>
+            <div id="doctorList"></div>
+          </section>
+        </div>
+      </details>
+    </div>
+
+  </main>
+  <div id="app-footer"></div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+  <script type="module" src="js/pages/receptionist.js"></script>
+</body>
+</html>

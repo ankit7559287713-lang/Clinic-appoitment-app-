@@ -28,55 +28,12 @@
       </div>
     </section>
     <div class="container py-4 py-lg-5">
-      <div id="reviewPrompt"></div>
+      <section class="card p-3 p-lg-4 mb-4" aria-labelledby="emergencyHistoryTitle">
+        <h2 class="h6 mb-3" id="emergencyHistoryTitle">Emergency request history</h2>
+        <div id="emergencyRequestHistory"></div>
+      </section>
       <ul class="nav nav-pills gap-2 mb-4" id="apptTabs" role="tablist"></ul>
       <div id="apptList" role="tabpanel" aria-live="polite"></div>
-    </div>
-
-    <!-- Review modal -->
-    <div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalTitle" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h2 class="modal-title h5" id="reviewModalTitle"><i class="bi bi-star text-turq me-2" aria-hidden="true"></i><span id="reviewModalLabel">Rate your visit</span></h2>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <form id="reviewForm" novalidate>
-            <div class="modal-body">
-              <div class="summary-box mb-4" id="reviewSummary"></div>
-              <fieldset class="mb-3 text-center">
-                <legend class="form-label fs-6 mb-2">How was your visit? <span class="text-danger" aria-hidden="true">*</span></legend>
-                <div class="star-input" id="starInput" aria-describedby="rating-error">
-                    <input class="visually-hidden star-radio" type="radio" name="rating" id="star1" value="1">
-                    <label class="star-label" for="star1" data-star="1"><i class="bi bi-star-fill" aria-hidden="true"></i><span class="visually-hidden">1 star, Poor</span></label>
-                    <input class="visually-hidden star-radio" type="radio" name="rating" id="star2" value="2">
-                    <label class="star-label" for="star2" data-star="2"><i class="bi bi-star-fill" aria-hidden="true"></i><span class="visually-hidden">2 stars, Fair</span></label>
-                    <input class="visually-hidden star-radio" type="radio" name="rating" id="star3" value="3">
-                    <label class="star-label" for="star3" data-star="3"><i class="bi bi-star-fill" aria-hidden="true"></i><span class="visually-hidden">3 stars, Good</span></label>
-                    <input class="visually-hidden star-radio" type="radio" name="rating" id="star4" value="4">
-                    <label class="star-label" for="star4" data-star="4"><i class="bi bi-star-fill" aria-hidden="true"></i><span class="visually-hidden">4 stars, Very good</span></label>
-                    <input class="visually-hidden star-radio" type="radio" name="rating" id="star5" value="5">
-                    <label class="star-label" for="star5" data-star="5"><i class="bi bi-star-fill" aria-hidden="true"></i><span class="visually-hidden">5 stars, Excellent</span></label>
-                </div>
-                <div class="rating-word mt-1" id="ratingWord" aria-live="polite">Tap a star to rate</div>
-                <div class="invalid-feedback d-block" id="rating-error"></div>
-              </fieldset>
-              <div class="mb-1">
-                <label class="form-label" for="comment">Your review <span class="text-muted fw-normal">(optional)</span></label>
-                <textarea class="form-control" id="comment" name="comment" rows="4" maxlength="300" aria-describedby="comment-help comment-error" placeholder="What went well? What could be better?"></textarea>
-                <div class="invalid-feedback" id="comment-error"></div>
-                <div class="form-text d-flex justify-content-between" id="comment-help"><span><i class="bi bi-eye me-1" aria-hidden="true"></i>Shown publicly as your first name and last initial.</span><span id="commentCount">0/300</span></div>
-              </div>
-              <div id="reviewAlert" class="mt-3" aria-live="assertive"></div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-link text-danger me-auto px-0 d-none" id="deleteReviewBtn"><i class="bi bi-trash3" aria-hidden="true"></i>Delete review</button>
-              <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
-              <button type="submit" class="btn btn-primary px-4" id="submitReviewBtn"><i class="bi bi-send" aria-hidden="true"></i>Post review</button>
-            </div>
-          </form>
-        </div>
-      </div>
     </div>
   </main>
   <div id="app-footer"></div>

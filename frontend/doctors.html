@@ -36,6 +36,9 @@
               </div>
               <fieldset class="mb-4">
                 <legend class="form-label fs-6">Specialty</legend>
+                <label class="visually-hidden" for="specialtySearch">Search specialties</label>
+                <input type="search" class="form-control mb-2" id="specialtySearch" list="specialtySuggestions" placeholder="Type a specialty" autocomplete="off">
+                <datalist id="specialtySuggestions"></datalist>
                 <div class="specialty-pills" id="specialtyPills"></div>
               </fieldset>
               <div class="form-check form-switch mb-2">
@@ -49,7 +52,6 @@
               <label class="form-label mt-4" for="sortBy">Sort by</label>
               <select class="form-select" id="sortBy">
                 <option value="name">Name (A–Z)</option>
-                <option value="rating">Highest rated</option>
                 <option value="soonest">Soonest available</option>
               </select>
             </form>

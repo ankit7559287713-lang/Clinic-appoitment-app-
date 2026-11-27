@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Patient Record · ClinicBook</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div id="app-nav"></div>
+  <main id="main">
+    <section class="page-hero">
+      <div class="container">
+        <div class="eyebrow mb-1">Clinic record</div>
+        <h1 class="mb-2" id="patientRecordTitle">Patient chart</h1>
+        <p class="text-muted mb-0">Records are linked to this patient and their visit or encounter.</p>
+      </div>
+    </section>
+    <div class="container py-4 py-lg-5">
+      <div id="recordAlert" aria-live="polite"></div>
+      <section id="patientInformation" class="card p-3 p-lg-4 mb-4" aria-labelledby="patientInformationTitle"></section>
+      <section class="card p-3 p-lg-4 mb-4" aria-labelledby="encounterHistoryTitle">
+        <h2 class="h5" id="encounterHistoryTitle">Appointments and encounters</h2>
+        <div id="encounterHistory"></div>
+      </section>
+      <section class="card p-3 p-lg-4 mb-4" aria-labelledby="clinicalHistoryTitle">
+        <h2 class="h5" id="clinicalHistoryTitle">Clinical history</h2>
+        <div id="clinicalHistory"></div>
+      </section>
+      <section id="consultationSection" class="card p-3 p-lg-4 d-none" aria-labelledby="consultationTitle">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+          <div><div class="eyebrow">Doctor workspace</div><h2 class="h5 mb-0" id="consultationTitle">Consultation record</h2></div>
+          <div id="recordEncounterSummary" class="small text-muted"></div>
+        </div>
+        <div id="existingEncounterRecord" class="mb-3"></div>
+        <button type="button" class="btn btn-soft mb-3 d-none" id="startAmendment">Create a clearly marked amendment</button>
+        <form id="consultationForm" class="d-none" novalidate>
+          <div id="amendmentNotice" class="alert alert-warning d-none" role="note">This will create a new amendment record. The original consultation and prescription will remain unchanged.</div>
+          <section class="border rounded-4 p-3 mb-3" aria-labelledby="consultationDetailsTitle">
+            <h3 class="h6" id="consultationDetailsTitle">Visit summary</h3>
+            <div class="mb-3"><label class="form-label" for="chiefComplaint">Chief complaint</label><textarea class="form-control" id="chiefComplaint" rows="2" maxlength="1000"></textarea></div>
+            <div class="row g-3">
+              <div class="col-md-6"><label class="form-label" for="diagnosis">Diagnosis</label><textarea class="form-control" id="diagnosis" rows="3" maxlength="1000"></textarea></div>
+              <div class="col-md-6"><label class="form-label" for="symptoms">Symptoms / observations</label><textarea class="form-control" id="symptoms" rows="3" maxlength="1000"></textarea></div>
+            </div>
+            <div class="mt-3"><label class="form-label" for="treatmentPlan">Treatment plan</label><textarea class="form-control" id="treatmentPlan" rows="3" maxlength="1000"></textarea></div>
+            <div class="mt-3"><label class="form-label" for="consultationNotes">Consultation notes</label><textarea class="form-control" id="consultationNotes" rows="4" maxlength="5000"></textarea></div>
+          </section>
+          <section class="border rounded-4 p-3 mb-3" aria-labelledby="prescriptionTitle">
+            <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+              <div><h3 class="h6 mb-1" id="prescriptionTitle">Prescription</h3><p class="small text-muted mb-0">Leave all medicine rows blank if no prescription is needed.</p></div>
+              <button type="button" class="btn btn-sm btn-soft" data-add-medicine>Add medicine</button>
+            </div>
+            <div id="prescriptionRows" class="d-grid gap-3"></div>
+          </section>
+          <section class="border rounded-4 p-3 mb-3" aria-labelledby="referralTitle">
+            <h3 class="h6" id="referralTitle">Referral</h3>
+            <div class="form-check form-switch mb-3"><input class="form-check-input" type="checkbox" id="referralRequired"><label class="form-check-label fw-semibold" for="referralRequired">Referral required</label></div>
+            <div id="referralFields" class="row g-3 d-none">
+              <div class="col-md-6"><label class="form-label" for="referralDoctor">Referred doctor / specialist</label><input class="form-control" id="referralDoctor" maxlength="100"></div>
+              <div class="col-md-6"><label class="form-label" for="referralReason">Referral reason</label><input class="form-control" id="referralReason" maxlength="1000"></div>
+              <div class="col-12"><label class="form-label" for="referralInstructions">Additional instructions</label><textarea class="form-control" id="referralInstructions" rows="2" maxlength="1000"></textarea></div>
+            </div>
+          </section>
+          <div id="consultationAlert" aria-live="polite"></div>
+          <button type="submit" class="btn btn-primary">Save consultation record</button>
+        </form>
+        <div id="encounterActions" class="d-flex flex-wrap gap-2 mt-3"></div>
+      </section>
+      <div class="small text-muted mt-4">ClinicBook is a fictional-data demo. LocalStorage and client-side roles are not suitable for real medical records.</div>
+    </div>
+  </main>
+  <div id="app-footer"></div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+  <script type="module" src="js/pages/patient-record.js"></script>
+</body>
+</html>

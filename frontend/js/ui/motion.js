@@ -100,13 +100,3 @@ export function celebrate(container) {
   }
   return tl;
 }
-
-/** Grow rating-distribution bars from 0 when they scroll into view. */
-export function growBars(root) {
-  const bars = [...(root?.querySelectorAll('.rb-fill') || [])];
-  if (!bars.length || !canAnimate()) return;
-  const gs = g();
-  const run = () => gs.fromTo(bars, { width: '0%' }, { width: (i, el) => `${el.dataset.width}%`, duration: 0.9, stagger: 0.08, ease: 'power3.out' });
-  if (window.ScrollTrigger) window.ScrollTrigger.create({ trigger: root, start: 'top 90%', once: true, onEnter: run });
-  else run();
-}

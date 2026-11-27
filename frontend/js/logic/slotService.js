@@ -6,10 +6,11 @@ import { timeToMinutes, minutesToTime, rangesOverlap, isPastSlot, toDateTime, fo
 
 /** Availability is derived from appointments — never stored on the slot. */
 export function isSlotBooked(data, slotId) {
-  return data.appointments.some((a) => a.slotId === slotId && a.status === 'Booked');
+  return data.appointments.some((a) => a.slotId === slotId && a.status === 'Booked' && !a.isEmergency);
 }
 
 export function getSlotStatus(data, slot) {
+  if (slot.legacyBlock) return 'Unavailable';
   return isSlotBooked(data, slot.slotId) ? 'Booked' : 'Available';
 }
 
@@ -27,8 +28,21 @@ export function findOverlappingSlot(data, { doctorId, date, startTime, endTime, 
   const b = timeToMinutes(endTime);
   return data.slots.find(
     (s) => s.doctorId === doctorId && s.date === date && s.slotId !== ignoreSlotId &&
-      rangesOverlap(a, b, timeToMinutes(s.startTime), timeToMinutes(s.endTime)),
+      rangesOverlap(a, b, timeToMinutes(s.startTime), timeToMinutes(s.endTime)) &&
+      (!s.legacyBlock || isSlotBooked(data, s.slotId)),
   ) || null;
+}
+
+export function isEmergencyBufferAvailable(data, slot, ignoreRequestId = null) {
+  if (!slot || slot.legacyBlock ||
+      timeToMinutes(slot.endTime) - timeToMinutes(slot.startTime) !== 30) return false;
+  return !(data.emergencyRequests || []).some((request) =>
+    request.requestId !== ignoreRequestId &&
+    ['pending_approval', 'Pending Verification', 'Approved', 'In Progress', 'Accepted', 'Legacy Accepted'].includes(request.status) &&
+    request.slotId === slot.slotId,
+  ) && !(data.emergencyReservations || []).some((reservation) =>
+    reservation.slotId === slot.slotId && reservation.status !== 'Cancelled',
+  );
 }
 
 export function nextAvailableSlot(data, doctorId, now = new Date()) {
@@ -48,11 +62,23 @@ export function addSlot({ doctorId, date, startTime, duration, actor }, now = ne
   return transact((data) => {
     const doctor = data.doctors.find((d) => d.doctorId === doctorId);
     if (!doctor) return fail('DOCTOR_NOT_FOUND', 'Doctor not found.');
+    if (doctor.status !== 'active') return fail('DOCTOR_UNAVAILABLE', 'Inactive doctors cannot publish new slots.');
     const clash = findOverlappingSlot(data, { doctorId, date, startTime, endTime });
     if (clash) {
       return fail('SLOT_OVERLAP', `This overlaps your ${formatTime(clash.startTime)}–${formatTime(clash.endTime)} slot. Choose a different time.`, { clash });
     }
-    const slot = { slotId: newId('s'), doctorId, date, startTime, endTime };
+    const consultationEndTime = minutesToTime(timeToMinutes(startTime) + 15);
+    const slot = {
+      slotId: newId('s'),
+      doctorId,
+      date,
+      startTime,
+      endTime,
+      consultationEndTime,
+      emergencyBufferStartTime: consultationEndTime,
+      emergencyBufferEndTime: endTime,
+      legacyBlock: false,
+    };
     data.slots.push(slot);
     return ok({ slot });
   });
@@ -63,7 +89,9 @@ export function removeSlot({ slotId, actor }) {
     const slot = data.slots.find((s) => s.slotId === slotId);
     if (!slot) return fail('SLOT_NOT_FOUND', 'That slot no longer exists.');
     if (!can(actor, 'removeSlot', { doctorId: slot.doctorId })) return fail('UNAUTHORIZED', 'You can only remove your own slots.');
-    if (isSlotBooked(data, slotId)) return fail('SLOT_HAS_BOOKING', 'This slot has an active appointment and cannot be removed.');
+    if (isSlotBooked(data, slotId) || !isEmergencyBufferAvailable(data, slot)) {
+      return fail('SLOT_HAS_BOOKING', 'This slot has an active appointment or emergency request and cannot be removed.');
+    }
     data.slots = data.slots.filter((s) => s.slotId !== slotId);
     return ok({ slot });
   });

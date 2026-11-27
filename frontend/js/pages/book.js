@@ -1,19 +1,20 @@
 // Slot picker + booking modal. Booking goes through bookAppointment(), which
 // re-reads storage and checks availability in the same synchronous step.
 import { initPage, $, $$, escapeHtml, avatar, emptyState, toast, showFieldErrors, clearFieldErrors } from '../ui/common.js';
-import { renderDayStrip, ratingInline, reviewsBlockHtml, bindReviewList } from '../ui/components.js';
-import { doctorRating, listDoctorReviews } from '../logic/reviewService.js';
+import { renderDayStrip } from '../ui/components.js';
 import { getSession } from '../ui/session.js';
 import { listSlots, nextAvailableSlot } from '../logic/slotService.js';
 import { bookAppointment } from '../logic/bookingService.js';
+import { requestEmergency, emergencyBuffers } from '../logic/emergencyService.js';
 import { validateReason, hasErrors } from '../logic/validators.js';
 import { toISODate, addDays, parseISODate, formatLongDate, formatDate, formatTime, timeToMinutes } from '../logic/dateUtils.js';
-import { staggerIn, popIn, pulse, shake, celebrate, growBars } from '../ui/motion.js';
+import { staggerIn, popIn, pulse, shake, celebrate } from '../ui/motion.js';
 
 const params = new URLSearchParams(window.location.search);
 const state = { doctorId: params.get('doctor'), date: params.get('date'), selectedSlotId: null, hidePast: true };
 let ctxRef;
 let modal;
+let emergencyModal;
 
 
 const currentDoctor = () => ctxRef.data.doctors.find((d) => d.doctorId === state.doctorId);
@@ -29,25 +30,34 @@ function renderMissingDoctor() {
 function renderProfile(doctor) {
   $('#crumbDoctor').textContent = doctor.name;
   document.title = `Book ${doctor.name} · ClinicBook`;
-  const next = nextAvailableSlot(ctxRef.data, doctor.doctorId);
   const onLeave = doctor.status !== 'active';
+  const next = onLeave ? null : nextAvailableSlot(ctxRef.data, doctor.doctorId);
   $('#doctorProfile').innerHTML = `
     <div class="card p-4 text-center" data-animate>
       <div class="d-flex justify-content-center mb-3">${avatar(doctor, 'avatar-lg')}</div>
       <h1 class="h4 mb-1">${escapeHtml(doctor.name)}</h1>
       <div class="fw-semibold text-turq mb-2">${escapeHtml(doctor.specialty)}</div>
-      <div class="d-flex justify-content-center mb-3"><a href="#reviewsTitle" class="text-decoration-none text-reset">${ratingInline(doctorRating(ctxRef.data, doctor.doctorId))}</a></div>
       <p class="small text-muted">${escapeHtml(doctor.bio)}</p>
       <div class="d-flex justify-content-center flex-wrap gap-2 mb-4">
+        <span class="status-badge status-Past"><i class="bi bi-mortarboard" aria-hidden="true"></i>${escapeHtml(doctor.qualification || 'Qualification not provided')}</span>
         <span class="status-badge status-Past"><i class="bi bi-award" aria-hidden="true"></i>${doctor.experience} yrs</span>
         <span class="status-badge status-Past"><i class="bi bi-door-open" aria-hidden="true"></i>${escapeHtml(doctor.room)}</span>
         ${onLeave ? '<span class="status-badge status-onleave"><i class="bi bi-airplane" aria-hidden="true"></i>On leave</span>' : ''}
+      </div>
+      <div class="text-start small mb-3">
+        <div class="fw-semibold mb-1">Conditions treated</div>
+        <p class="text-muted mb-2">${escapeHtml((doctor.conditionsTreated || []).join(' · ') || 'Details not provided')}</p>
+        <div class="fw-semibold mb-1">Areas of expertise</div>
+        <p class="text-muted mb-2">${escapeHtml((doctor.expertise || []).join(' · ') || 'Details not provided')}</p>
+        <div class="fw-semibold mb-1">Consultation</div>
+        <p class="text-muted mb-2">${doctor.consultationFee == null ? '' : `₹${escapeHtml(doctor.consultationFee)} · `}${escapeHtml(doctor.consultationMode || 'In-person · 15 minutes')}</p>
       </div>
       ${next
         ? `<div class="summary-box text-start mb-3"><div class="small text-muted fw-semibold mb-1">Next available</div>
              <div class="fw-bold"><i class="bi bi-lightning-charge-fill text-turq me-1" aria-hidden="true"></i>${formatDate(next.date)}, ${formatTime(next.startTime)}</div></div>
            <button type="button" class="btn btn-primary w-100" id="jumpNext"><i class="bi bi-skip-forward-fill" aria-hidden="true"></i>Book next available</button>`
         : '<p class="small text-muted mb-0"><i class="bi bi-calendar-x me-1" aria-hidden="true"></i>No open slots right now.</p>'}
+      ${!onLeave ? '<button type="button" class="btn btn-outline-danger w-100 mt-3" id="openEmergencyRequest"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i>Request emergency response</button><p class="small text-muted mt-2 mb-0">This sends a request for review; it does not create an appointment.</p>' : ''}
     </div>`;
   $('#jumpNext')?.addEventListener('click', () => {
     const n = nextAvailableSlot(ctxRef.data, state.doctorId);
@@ -137,6 +147,10 @@ function slotButton(s) {
     return `<button type="button" class="slot-btn is-past" disabled aria-label="${range}, past">
       <span class="slot-time">${time}</span><span class="slot-state"><i class="bi bi-clock-history" aria-hidden="true"></i>Past</span></button>`;
   }
+  if (s.status !== 'Available') {
+    return `<button type="button" class="slot-btn is-booked" disabled aria-label="${range}, unavailable">
+      <span class="slot-time">${time}</span><span class="slot-state"><i class="bi bi-lock-fill" aria-hidden="true"></i>Unavailable</span></button>`;
+  }
   const sel = s.slotId === state.selectedSlotId;
   return `<button type="button" class="slot-btn" data-slot="${s.slotId}" aria-pressed="${sel}" aria-label="${range}, available">
     <span class="slot-time">${time}</span><span class="slot-state"><i class="bi bi-check-circle" aria-hidden="true"></i>Available</span></button>`;
@@ -171,6 +185,45 @@ function bindEvents() {
     $('#bookingStepSuccess').classList.add('d-none');
     state.selectedSlotId = null;
     renderSlots(currentDoctor(), false);
+  });
+
+  $('#openEmergencyRequest')?.addEventListener('click', () => {
+    $('#emergencyRequestAlert').innerHTML = '';
+    renderEmergencySlots();
+    emergencyModal.show();
+  });
+  $('#emergencyRequestForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const session = getSession();
+    const reason = $('#emergencyReason').value;
+    const submitButton = $('#emergencyRequestForm button[type="submit"]');
+    if (submitButton.disabled) return;
+    submitButton.disabled = true;
+    const result = requestEmergency({
+      patientId: session.patientId,
+      doctorId: state.doctorId,
+      slotId: $('#emergencySlot').value,
+      reason,
+      actor: session,
+    });
+    const alert = $('#emergencyRequestAlert');
+    if (!result.ok) {
+      alert.innerHTML = `<div class="alert alert-danger mb-0" role="alert">${escapeHtml(result.message)}</div>`;
+      submitButton.disabled = false;
+      return;
+    }
+    const slot = result.slot;
+    alert.innerHTML = `<div class="alert alert-info mb-0" role="status">
+      <strong>Your emergency request has been submitted. It is waiting for receptionist approval. Your appointment is not confirmed yet.</strong>
+      <div class="small mt-2">${escapeHtml(result.doctor.name)} · ${formatLongDate(slot.date)} · ${formatTime(slot.emergencyBufferStartTime || slot.consultationEndTime)}–${formatTime(slot.emergencyBufferEndTime || slot.endTime)}</div>
+    </div>`;
+    toast('Your emergency request is waiting for receptionist approval.', 'info');
+  });
+  $('#emergencyRequestModal').addEventListener('hidden.bs.modal', () => {
+    $('#emergencyRequestForm').reset();
+    $('#emergencyRequestForm button[type="submit"]').disabled = false;
+    $('#emergencySlot').disabled = false;
+    $('#emergencyRequestAlert').innerHTML = '';
   });
 }
 
@@ -220,6 +273,20 @@ function renderPatientSection() {
   const p = ctxRef.data.patients.find((x) => x.patientId === session.patientId);
   $('#patientSection').innerHTML = `<div class="d-flex align-items-center gap-3 p-3 rounded-4 border">${avatar(p, 'avatar-sm')}
     <div><div class="small text-muted fw-semibold">Patient</div><div class="fw-bold">${escapeHtml(p.name)}</div></div></div>`;
+}
+
+function renderEmergencySlots() {
+  const options = emergencyBuffers(ctxRef.data, state.doctorId);
+  const select = $('#emergencySlot');
+  select.innerHTML = '<option value="">Choose an available emergency time</option>' +
+    options.map((slot) => `<option value="${escapeHtml(slot.slotId)}" ${slot.date === state.date ? 'selected' : ''}>
+      ${formatLongDate(slot.date)} · ${formatTime(slot.emergencyBufferStartTime || slot.consultationEndTime)}–${formatTime(slot.emergencyBufferEndTime || slot.endTime)}
+    </option>`).join('');
+  select.disabled = !options.length;
+  $('#emergencyRequestForm button[type="submit"]').disabled = !options.length;
+  if (!options.length) {
+    $('#emergencyRequestAlert').innerHTML = '<div class="alert alert-warning mb-0" role="status">No future emergency times are available for this doctor.</div>';
+  }
 }
 
 function alertHtml(variant, icon, html) {
@@ -285,24 +352,13 @@ function showSuccess(res) {
     <div class="summary-row"><i class="bi bi-person" aria-hidden="true"></i><span>${escapeHtml(patient.name)}</span></div>
     <div class="summary-row"><i class="bi bi-person-badge" aria-hidden="true"></i><span>${escapeHtml(doctor.name)} <span class="text-muted fw-normal">· ${escapeHtml(doctor.specialty)}</span></span></div>
     <div class="summary-row"><i class="bi bi-calendar3" aria-hidden="true"></i><span>${formatLongDate(a.date)}</span></div>
-    <div class="summary-row"><i class="bi bi-clock" aria-hidden="true"></i><span>${formatTime(a.startTime)} – ${formatTime(a.endTime)}</span></div>
+    <div class="summary-row"><i class="bi bi-clock" aria-hidden="true"></i><span>${formatTime(a.startTime)} – ${formatTime(a.blockEndTime || a.endTime)} (30-minute block)</span></div>
     <div class="summary-row"><i class="bi bi-chat-left-text" aria-hidden="true"></i><span class="fw-normal">${escapeHtml(a.reason)}</span></div>`;
   $('#successActions').innerHTML = `<a class="btn btn-primary" href="appointments.html"><i class="bi bi-calendar2-check" aria-hidden="true"></i>View my appointments</a>
     <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Done</button>`;
   $('#successTitle').focus();
   celebrate($('#successBurst'));
   staggerIn('#successSummary .summary-row, #successActions > *', { delay: 0.5, stagger: 0.06 });
-}
-
-function renderReviews(doctor, animate) {
-  const host = $('#doctorReviews');
-  const firstName = doctor.name.replace(/^Dr\.\s*/, '').split(' ')[0];
-  host.innerHTML = reviewsBlockHtml(doctorRating(ctxRef.data, doctor.doctorId), listDoctorReviews(ctxRef.data, doctor.doctorId), ctxRef.data, {
-    limit: 3,
-    emptyText: `No reviews for Dr. ${escapeHtml(firstName)} yet. Patients can leave one after a completed visit.`,
-  });
-  bindReviewList(host, (items) => staggerIn(items, { stagger: 0.06 }));
-  if (animate) growBars(host);
 }
 
 initPage({
@@ -316,10 +372,10 @@ initPage({
       if (!state.date || state.date < today) state.date = nextAvailableSlot(ctx.data, doctor.doctorId)?.date || today;
       bindEvents();
       modal = new window.bootstrap.Modal($('#bookingModal'));
+      emergencyModal = new window.bootstrap.Modal($('#emergencyRequestModal'));
     }
     renderProfile(doctor);
     renderDays(doctor);
     renderSlots(doctor, !isRefresh);
-    renderReviews(doctor, !isRefresh);
   },
 });

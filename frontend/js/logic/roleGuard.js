@@ -17,6 +17,7 @@ const PAGE_ACCESS = {
   home: 'any',
   settings: 'any',
   'patient-login': 'any',
+  'patient-register': 'any',
   'doctor-login': 'any',
   'receptionist-login': 'any',
   doctors: ['patient'],
@@ -24,6 +25,7 @@ const PAGE_ACCESS = {
   appointments: ['patient'],
   schedule: ['doctor'],
   receptionist: ['receptionist'],
+  'patient-record': ['doctor', 'receptionist'],
 };
 
 export function canAccessPage(role, page) {
@@ -34,7 +36,7 @@ export function canAccessPage(role, page) {
 
 /**
  * @param {{role:string, patientId?:string, doctorId?:string}} actor
- * @param {string} action book | cancel | review | complete | addSlot | removeSlot
+ * @param {string} action book | cancel | complete | startConsultation | addSlot | removeSlot | emergencyRequest | emergencyDecision | emergencyManage | consultationWrite | clinicalRead | registerPatient | queueUpdate | qrCheckIn | doctorManage | patientImport | doctorQueueUpdate
  * @param {object} ctx  { patientId, doctorId, appointment }
  */
 export function can(actor, action, ctx = {}) {
@@ -45,13 +47,32 @@ export function can(actor, action, ctx = {}) {
       return (role === 'patient' && ctx.patientId === actor.patientId) || role === 'receptionist';
     case 'cancel':
       return (role === 'patient' && ctx.appointment?.patientId === actor.patientId) || role === 'receptionist';
-    case 'review':
-      return role === 'patient' && ctx.patientId === actor.patientId;
     case 'complete':
+    case 'startConsultation':
       return role === 'doctor' && ctx.appointment?.doctorId === actor.doctorId;
     case 'addSlot':
     case 'removeSlot':
       return role === 'doctor' && ctx.doctorId === actor.doctorId;
+    case 'emergencyRequest':
+      return role === 'patient' && ctx.patientId === actor.patientId;
+    case 'consultationWrite':
+      return role === 'doctor' && ctx.doctorId === actor.doctorId;
+    case 'emergencyDecision':
+    case 'doctorManage':
+    case 'patientImport':
+      return role === 'receptionist';
+    case 'emergencyManage':
+      return role === 'doctor' && ctx.emergency?.doctorId === actor.doctorId;
+    case 'doctorQueueUpdate':
+      return role === 'doctor' && ctx.queueEntry?.doctorId === actor.doctorId;
+    case 'clinicalRead':
+      return (role === 'patient' && ctx.patientId === actor.patientId) ||
+        (role === 'doctor' && ctx.doctorId === actor.doctorId) ||
+        role === 'receptionist';
+    case 'registerPatient':
+    case 'queueUpdate':
+    case 'qrCheckIn':
+      return role === 'receptionist';
     default:
       return false;
   }

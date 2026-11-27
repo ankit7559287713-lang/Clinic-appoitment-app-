@@ -1,94 +1,88 @@
 # ClinicBook – Clinic Appointment Booking
 
-Doctors publish time slots, patients book them, and the system guarantees a slot can never be booked twice.
-Built with **HTML5, CSS3, Bootstrap 5.3, vanilla JavaScript (ES modules) and GSAP 3** for animation, with a whitesmoke theme and turquoise accents.
+ClinicBook is an educational clinic scheduling prototype built with HTML, CSS, Bootstrap 5, vanilla JavaScript ES modules and LocalStorage. It has no server or database.
 
-## Run it
+## Run and test
 
-ES modules don't load from `file://`, so serve the folder:
+Serve this directory (ES modules do not load from `file://`):
 
 ```bash
-npm start            # node serve.mjs → http://localhost:5730
+npm start
 ```
 
-(Any static server works, e.g. VS Code Live Server.)
-
-Run the booking-rule tests (Node 18+, no dependencies):
+Open `http://localhost:5730`. To run the automated suite:
 
 ```bash
 npm test
 ```
 
-## Roles (demonstration login)
+Tests use Node's built-in test runner; no package installation is required.
 
-Patients and doctors have separate login pages. There are no passwords (real authentication is out of scope): a patient signs in with their registered phone number (e.g. `555-010-2001`) a doctor with their staff ID (e.g. `DOC-101`) and a receptionist with `REC-001`, or by clicking one of the demo accounts listed on the page. The login is stored per browser tab (sessionStorage), so you can open two tabs as different patients to see conflict protection live.
+## Demo access
 
-| Role | Can do |
+There are no passwords; the login pages offer fictional demo accounts.
+
+| Role | Demo login |
 |---|---|
-| **Patient** | Browse doctors, see Available/Booked slots, book with a reason, view & cancel own appointments |
-| **Patient (reviews)** | Rate a completed visit 1–5 stars with an optional comment; edit or delete own reviews |
-| **Doctor** | Add/remove own unbooked slots (no overlaps), view day schedule, mark appointments completed |
-| **Receptionist** | Sign in with `REC-001`, book for registered patients, cancel appointments and view all appointment statuses |
+| Patient | `9876501001` or `aarav.sharma@example.in` |
+| Doctor | `DOC-101` |
+| Receptionist | `REC-001` |
+
+Patient mobile login requires exactly 10 digits. The session is stored in `sessionStorage` per browser tab.
 
 ## Screens
 
 | File | Screen |
 |---|---|
-| `index.html` | Landing page with links to both logins |
-| `patient-login.html` | Patient login (phone number) |
-| `doctor-login.html` | Doctor login (staff ID) |
-| `receptionist-login.html` | Receptionist login (staff ID) |
-| `receptionist.html` | Receptionist appointment desk |
-| `doctors.html` | Doctor directory (search, specialty filter, next available) |
-| `book.html` | Slot picker + booking modal / confirmation |
-| `appointments.html` | My Appointments (patient) |
-| `schedule.html` | Doctor schedule + slot management |
-| `settings.html` | Current role, reset sample data, known limitations |
+| `patient-login.html` | Patient mobile or email login |
+| `patient-register.html` | Patient self-registration and optional walk-in handoff QR |
+| `doctors.html` | Searchable doctor directory and specialty autocomplete |
+| `book.html` | Doctor profile, slots, booking and emergency request |
+| `appointments.html` | Patient appointments, emergency status and own completed clinical records |
+| `patient-record.html` | Dedicated chart for receptionists and doctors assigned to the workflow |
+| `schedule.html` | Doctor schedule, assigned walk-ins, approved emergency cases and appointments |
+| `receptionist.html` | Patient search, registration handoff import, walk-in queue, QR check-in, and doctor/emergency management |
+| `settings.html` | Current role, sample data reset and limitations |
 
 ## Architecture
 
 ```
-js/logic/   DOM-free, unit-tested
-  dateUtils.js       date/time helpers (local clinic time)
-  sampleData.js      fictional data generated relative to today
-  storage.js         versioned LocalStorage + transact() (load → check → save)
-  validators.js      form validation
-  roleGuard.js       which role may open which page / do which action
-  authService.js     demo login lookup (phone number / staff ID)
-  reviewService.js   patient reviews: add / edit / delete, derived doctor rating
-  slotService.js     list/add/remove slots, overlap detection, derived status
-  bookingService.js  book / cancel / complete
-js/ui/      navbar, toasts, confirm modal, session, GSAP motion helpers
-js/pages/   one script per page
-css/styles.css       turquoise theme over Bootstrap
-tests/booking.test.js node:test suite
+js/logic/   DOM-free application services and data
+  authService.js          demo login lookup
+  bookingService.js       booking, cancellation and consultation status
+  consultationService.js  encounter-linked consultations, amendments and scoped reads
+  doctorService.js        receptionist-managed doctor accounts
+  doctorDirectory.js      profile links and specialty matching
+  emergencyService.js     receptionist approval and emergency buffer workflow
+  patientService.js       patient registration and duplicate detection
+  qrHandoffService.js     one-time demographics handoff between browsers
+  receptionService.js     walk-ins, queue, patient lookup and appointment QR validation
+  qrCode.js               locally bundled QR generation
+  sampleData.js           fictional Indian patient data and 30-minute slots
+  slotService.js          slot status derived from saved appointments and requests
+  storage.js              versioned LocalStorage migration and synchronous transactions
+  validators.js           input validation
+  roleGuard.js            demonstration role and ownership checks
+js/ui/      shared navigation, forms, toasts and animation helpers
+js/pages/   page-specific controllers
+css/styles.css
+tests/booking.test.js     Node test suite
 ```
 
-### Booking rules
-1. A slot's availability is **derived** from appointments – there is no stored `isBooked` flag.
-2. `bookAppointment()` re-reads storage and checks + writes in one synchronous call.
-3. A slot has at most one active (`Booked`) appointment → otherwise `SLOT_TAKEN`.
-4. A patient can't hold two overlapping active appointments, even with different doctors → `PATIENT_OVERLAP`.
-5. Past slots can't be booked → `SLOT_IN_PAST`.
-6. Doctor slots can't overlap → `SLOT_OVERLAP`; booked slots can't be removed → `SLOT_HAS_BOOKING`.
-7. Cancelling keeps the record, frees the slot; cancelling twice → `ALREADY_CANCELLED`.
-8. Only `Booked` → `Completed`; `Completed` and `Cancelled` are final.
+## Scheduling and records
 
-Pages listen for the browser `storage` event and re-render, so other tabs see changes immediately.
+- Each slot reserves 30 minutes: a 15-minute consultation and 15-minute emergency buffer. Receptionists assign an available buffer when approving a request; doctors manage the approved case from their schedule.
+- Slot availability is derived from appointment and emergency-request records. Past slots, doctor availability, duplicate bookings and patient/doctor overlaps are checked before saving.
+- Patients can register themselves and later sign in by registered mobile or email. Phone/email duplicates are checked against this browser's saved patient list.
+- Emergency requests remain separate from normal appointments. Receptionists verify, assign a doctor and buffer, then approve or reject; doctors only see approved cases.
+- Consultation notes, prescriptions and amendments are linked to an appointment or walk-in/emergency encounter, patient and doctor. Patients see only their own completed records.
+- Receptionist walk-ins and scheduled QR check-ins use separate queue records. Existing patients are selected; newly self-registered walk-ins can transfer demographics through a one-time QR/file handoff.
 
-### Review rules
-1. Only the patient who attended can review, and only once the visit is `Completed`.
-2. One review per visit; rating is a whole number 1–5, comment is optional (max 300 characters).
-3. Patients can edit or delete only their own reviews.
-4. A doctor's average rating is calculated from reviews, never stored.
-5. Reviews show the patient as first name + last initial, with a “Verified visit” badge.
+## Limitations
 
-### Tests cover
-Two patients booking the same slot · the same booking submitted twice · cancel then rebook · overlapping doctor slots · a patient overlapping across two doctors · booking a past slot · cancelling an already-cancelled appointment · completion rules · slot removal rules · role checks · receptionist assisted booking/cancellation · validators · review rules (ownership, completed-only, one per visit, rating range, edit/delete, average) · sample data integrity.
-
-## Known limitations
-- Data lives in this browser's LocalStorage; it isn't shared across devices or browsers.
-- LocalStorage isn't transactional. True multi-user booking needs a server enforcing a unique constraint per slot.
-- Roles are a demonstration login, not security. Receptionist records remain local to this browser and are not shared across devices.
-- All data is fictional. Don't enter real health information.
+- LocalStorage is browser- and device-specific, has no cross-device synchronization, and does not provide atomic multi-user transactions. Concurrent tabs/devices can still race; the application is not suitable for real clinic operations.
+- The clinic registration QR opens the registration page, but the patient's and clinic's LocalStorage remain separate. The patient must show the generated one-time handoff QR or transfer the JSON handoff file for receptionist import; this is not live synchronization. Appointment QR check-in is checked against clinic-browser data only.
+- Camera scanning requires camera permission, a secure context such as localhost or HTTPS, and browser support for `BarcodeDetector`; support varies by device and browser. Manual payload entry/file import remains available.
+- Login and role checks are demonstration-only client-side controls. All data is fictional; do not enter real patient information.
+- Existing records are preserved during the versioned schema migration. Legacy slots that do not use 30-minute blocks remain in history but are unavailable for new bookings.
 - Animations respect `prefers-reduced-motion`.
